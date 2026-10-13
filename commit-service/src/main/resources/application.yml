@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8081}
+spring:
+  application.name: commit-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa.hibernate.ddl-auto: validate
+springdoc:
+  api-docs.path: /v3/api-docs
+  swagger-ui.path: /swagger-ui.html
+management.endpoints.web.exposure.include: health,info
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+hf:
+  api-token: ${HF_API_TOKEN:}
+  model: ${HF_MODEL:}
+  timeout: ${HF_TIMEOUT:10s}
+  retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
+qdrant:
+  host: ${QDRANT_HOST:qdrant}
+  port: ${QDRANT_PORT:6334}

@@ -1,0 +1,205 @@
+services:
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      COMMIT_DB_USER: ${COMMIT_DB_USER}
+      COMMIT_DB_PASSWORD: ${COMMIT_DB_PASSWORD}
+      SNIPPET_DB_USER: ${SNIPPET_DB_USER}
+      SNIPPET_DB_PASSWORD: ${SNIPPET_DB_PASSWORD}
+      BUG_DB_USER: ${BUG_DB_USER}
+      BUG_DB_PASSWORD: ${BUG_DB_PASSWORD}
+      SQL_DB_USER: ${SQL_DB_USER}
+      SQL_DB_PASSWORD: ${SQL_DB_PASSWORD}
+      REVIEW_DB_USER: ${REVIEW_DB_USER}
+      REVIEW_DB_PASSWORD: ${REVIEW_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/00-create-users.sh:/docker-entrypoint-initdb.d/00-create-users.sh:ro
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:6333/collections"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  commit-service:
+    build: ./commit-service
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${COMMIT_DB}
+      SPRING_DATASOURCE_USERNAME: ${COMMIT_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${COMMIT_DB_PASSWORD}
+      HF_API_TOKEN: ${HF_API_TOKEN}
+      HF_MODEL: ${HF_MODEL}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6334
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  snippet-service:
+    build: ./snippet-service
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${SNIPPET_DB}
+      SPRING_DATASOURCE_USERNAME: ${SNIPPET_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${SNIPPET_DB_PASSWORD}
+      HF_API_TOKEN: ${HF_API_TOKEN}
+      HF_MODEL: ${HF_MODEL}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  bug-service:
+    build: ./bug-service
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${BUG_DB}
+      SPRING_DATASOURCE_USERNAME: ${BUG_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${BUG_DB_PASSWORD}
+      HF_API_TOKEN: ${HF_API_TOKEN}
+      HF_MODEL: ${HF_MODEL}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  sql-service:
+    build: ./sql-service
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${SQL_DB}
+      SPRING_DATASOURCE_USERNAME: ${SQL_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${SQL_DB_PASSWORD}
+      HF_API_TOKEN: ${HF_API_TOKEN}
+      HF_MODEL: ${HF_MODEL}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  review-service:
+    build: ./review-service
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${REVIEW_DB}
+      SPRING_DATASOURCE_USERNAME: ${REVIEW_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${REVIEW_DB_PASSWORD}
+      HF_API_TOKEN: ${HF_API_TOKEN}
+      HF_MODEL: ${HF_MODEL}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8085/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres-data:
+  qdrant-storage:

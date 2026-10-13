@@ -1,0 +1,19 @@
+server.port: ${SERVER_PORT:8085}
+spring.application.name: review-service
+spring.datasource.url: ${SPRING_DATASOURCE_URL}
+spring.datasource.username: ${SPRING_DATASOURCE_USERNAME}
+spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD}
+spring.jpa.hibernate.ddl-auto: validate
+springdoc.api-docs.path: /v3/api-docs
+springdoc.swagger-ui.path: /swagger-ui.html
+management.endpoints.web.exposure.include: health,info
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+hf.api-token: ${HF_API_TOKEN:}
+hf.model: ${HF_MODEL:}
+hf.timeout: ${HF_TIMEOUT:10s}
+hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
