@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevAssist Hub · SQL module — wireframes (round 1)</title>
+<style>
+/*
+  THEME: Midnight Terminal — with two contrast fixes.
+
+  (1) input-border: #5b77a3
+      vs surface-raised #12223f = 3.48:1  (vs surface #0a1528 = 4.01:1)  -> passes 3:1 non-text UI contrast.
+      Decorative card borders keep --border #28406a (1.53:1, decorative only).
+
+  (2) Badge text on its 14% tint (tint computed over the surface the badge sits on):
+      role       text      on tint/surface #0a1528   on tint/raised #12223f
+      success    #4ade80   7.95:1                   6.76:1
+      danger     #ff8aa0   (adjusted from #ff6b86: was 4.82:1 on raised)  6.83:1 / 5.88:1
+      warning    #facc15   8.90:1                   7.62:1
+      info       #b49cff   6.26:1                   5.33:1
+      neutral    #a5b4c8   (adjusted from #94a3b8: was 4.87:1 on raised)  6.94:1 / 5.92:1
+      accent     #22d3ee   7.63:1                   6.47:1
+      All >= 4.5:1. Tints = 14% role color (the original role color, e.g. #ff6b86), line = 40%.
+      Other checks: text-muted #a5b8d1 on surface-raised 7.82:1; SQL comment #7690b0 on code-bg 6.13:1.
+*/
+:root{
+  --bg:#050b18; --surface:#0a1528; --surface-raised:#12223f; --border:#28406a; --input-border:#5b77a3;
+  --text:#f4f8ff; --muted:#a5b8d1; --accent:#22d3ee; --accent-text:#021219;
+  --success:#4ade80; --danger:#ff6b86; --warning:#facc15; --info:#b49cff; --neutral:#94a3b8;
+  --badge-danger-text:#ff8aa0; --badge-neutral-text:#a5b4c8;
+  --code-bg:#020712;
+  --sx-kw:#ff7ac6; --sx-id:#e8f1ff; --sx-str:#b5e655; --sx-num:#fbbf24; --sx-fn:#22d3ee; --sx-cm:#7690b0;
+  --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--ui)}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.page{max-width:1360px;margin:0 auto;padding:24px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+.lede{color:var(--muted);margin:0 0 16px}
+.anchors{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 0;display:flex;gap:6px;flex-wrap:wrap}
+.anchors a{padding:4px 10px;border:1px solid var(--border);border-radius:999px;font-size:13px;color:var(--text)}
+.anchors a:hover{border-color:var(--accent);text-decoration:none}
+section.screen{margin-top:48px;scroll-margin-top:56px}
+section.screen>h2{font-size:18px;margin:0 0 4px}
+section.screen>h2 .num{color:var(--accent);font-family:var(--mono);margin-right:8px}
+.sub{color:var(--muted);margin:0 0 12px;font-size:13px}
+
+/* browser frame */
+.frame{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.chrome{display:flex;align-items:center;gap:8px;background:#0d1a30;padding:8px 12px;border-bottom:1px solid var(--border)}
+.dots span{display:inline-block;width:10px;height:10px;border-radius:50%;background:#28406a;margin-right:4px}
+.url{flex:1;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--muted);font:12px var(--mono)}
+.viewport{min-height:400px}
+
+/* module header */
+.mh{display:flex;align-items:center;gap:20px;padding:0 20px;height:52px;background:var(--surface);border-bottom:1px solid var(--border)}
+.brand{font-weight:600;white-space:nowrap}
+.brand .sep{color:var(--muted);margin:0 6px}
+.tabs-top{display:flex;gap:2px;height:100%}
+.tabs-top a{display:flex;align-items:center;padding:0 12px;color:var(--muted);border-bottom:2px solid transparent;font-size:14px}
+.tabs-top a.on{color:var(--text);border-bottom-color:var(--accent)}
+.tabs-top a:hover{text-decoration:none;color:var(--text)}
+.mh .spacer{flex:1}
+.chip-user{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border:1px solid var(--border);border-radius:999px;font-size:13px}
+.avatar{width:22px;height:22px;border-radius:50%;background:var(--surface-raised);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:700}
+
+.content{padding:20px 24px 28px}
+.content.narrow{max-width:860px;margin:0 auto}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--ui);padding:6px 12px;border-radius:6px;border:1px solid var(--input-border);background:var(--surface-raised);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn.danger{background:var(--danger);color:#1a0208;border-color:var(--danger)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost-danger{background:transparent;border-color:transparent;color:var(--badge-danger-text)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn.primary[disabled]{background:#145f6c;border-color:#145f6c;color:#b8eef7;opacity:1}
+.focus-demo{outline:2px solid var(--accent);outline-offset:2px}
+.btn:focus-visible,.input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* inputs */
+.input,.select,.textarea{background:var(--surface-raised);border:1px solid var(--input-border);color:var(--text);border-radius:6px;padding:6px 10px;font:13px var(--ui)}
+.input::placeholder,.textarea::placeholder{color:#8ea3bf}
+.textarea{width:100%;resize:vertical;display:block}
+.textarea.code{font:13px/1.6 var(--mono);background:var(--code-bg)}
+.select{appearance:none;padding-right:26px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 8px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.field{margin-bottom:16px}
+.field label.lbl{display:flex;justify-content:space-between;font-weight:600;font-size:13px;margin-bottom:6px}
+.field .count{color:var(--muted);font-weight:400;font-family:var(--mono);font-size:12px}
+.help{color:var(--muted);font-size:12px;margin-top:4px}
+.err{color:var(--badge-danger-text);font-size:12px;margin-top:4px}
+.input.invalid,.textarea.invalid{border-color:var(--danger)}
+.req{color:var(--badge-danger-text)}
+
+/* badges & chips */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+.b-info{color:var(--info);background:rgba(180,156,255,.14);border-color:rgba(180,156,255,.40)}
+.b-danger{color:var(--badge-danger-text);background:rgba(255,107,134,.14);border-color:rgba(255,107,134,.40)}
+.b-neutral{color:var(--badge-neutral-text);background:rgba(148,163,184,.14);border-color:rgba(148,163,184,.40)}
+.b-success{color:var(--success);background:rgba(74,222,128,.14);border-color:rgba(74,222,128,.40)}
+.b-warning{color:var(--warning);background:rgba(250,204,21,.14);border-color:rgba(250,204,21,.40)}
+.b-accent{color:var(--accent);background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.40)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--surface-raised);border:1px solid var(--border);color:var(--muted)}
+.code-chip{font:12px var(--mono);padding:1px 6px;border-radius:4px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* code */
+.code{position:relative;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;font:13px/1.6 var(--mono);color:var(--sx-id);overflow:hidden}
+.code pre{margin:0;padding:12px 14px;white-space:pre;overflow:auto}
+.code.clip pre{max-height:calc(1.6em * 6 + 24px);overflow:hidden}
+.code.clip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(transparent,var(--code-bg));pointer-events:none}
+.code .showall{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:2;font:12px var(--ui)}
+.code .copy{position:absolute;top:8px;right:8px;z-index:2}
+.code.lines pre{counter-reset:ln;padding-left:0}
+.code.lines pre span.l{display:block;padding-left:52px;position:relative}
+.code.lines pre span.l::before{counter-increment:ln;content:counter(ln);position:absolute;left:0;width:36px;text-align:right;color:#4f6789}
+.k{color:var(--sx-kw)} .s{color:var(--sx-str)} .n{color:var(--sx-num)} .f{color:var(--sx-fn)} .c{color:var(--sx-cm);font-style:italic}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.qcard{margin-bottom:12px}
+.qcard h3{margin:0 0 4px;font-size:15px}
+.excerpt{color:var(--muted);margin:0 0 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{color:var(--muted);font-size:12px;margin-bottom:8px}
+
+/* filter bar */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.switch{width:28px;height:16px;border-radius:999px;border:1px solid var(--input-border);background:var(--surface-raised);position:relative}
+.switch::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:var(--muted);top:2px;left:2px}
+.switch.on{background:var(--accent);border-color:var(--accent)} .switch.on::after{left:14px;background:var(--accent-text)}
+.seg{display:inline-flex;border:1px solid var(--input-border);border-radius:6px;overflow:hidden;font-size:12px}
+.seg span{padding:5px 8px;color:var(--muted)} .seg span.on{background:var(--surface-raised);color:var(--text)}
+.seglbl{font-size:12px;color:var(--muted);margin-right:4px}
+
+/* states */
+.states{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-top:16px}
+.state{border:1px dashed var(--input-border);border-radius:10px;padding:14px;background:var(--surface)}
+.state-label{display:inline-block;font:600 11px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.notes{margin-top:14px;background:var(--surface);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 16px}
+.notes h4{margin:0 0 6px;font-size:13px}
+.notes ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
+.notes li{margin:3px 0}
+.notes b{color:var(--text);font-weight:600}
+
+/* banners, modals, toasts */
+.banner{border:1px solid;border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.banner.warn{border-color:rgba(250,204,21,.4);background:rgba(250,204,21,.08)}
+.banner.danger{border-color:rgba(255,107,134,.4);background:rgba(255,107,134,.08)}
+.banner.info{border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.06)}
+.banner.neutral{border-color:rgba(148,163,184,.4);background:rgba(148,163,184,.08)}
+.banner .ico{font-weight:700;font-family:var(--mono)}
+.modal-wrap{background:rgba(2,7,18,.7);border-radius:8px;padding:28px;display:grid;place-items:center}
+.modal{width:100%;max-width:440px;background:var(--surface-raised);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.modal h3{margin:0 0 8px;font-size:16px}
+.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.toast{display:inline-flex;align-items:center;gap:10px;background:var(--surface-raised);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:8px;padding:10px 14px;box-shadow:0 8px 20px rgba(0,0,0,.4);font-size:13px}
+.toast.warn{border-left-color:var(--warning)}
+.safety{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:13px}
+.safety b{color:var(--text)}
+
+/* result tabs */
+.rtabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:0}
+.rtabs a{padding:8px 14px;color:var(--muted);border-bottom:2px solid transparent;font-size:13px}
+.rtabs a.on{color:var(--text);border-bottom-color:var(--accent)}
+.rtabs a.warn{color:var(--warning)}
+.rtabs a:hover{text-decoration:none}
+.rpanel{background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 8px 8px;padding:14px}
+
+.cmdbar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px}
+.cmdbar .row2{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+
+.grid-detail{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px}
+dl.meta-list{margin:0;font-size:13px}
+dl.meta-list dt{color:var(--muted);font-size:12px;margin-top:10px}
+dl.meta-list dd{margin:2px 0 0}
+.crumb{color:var(--muted);font-size:13px;margin-bottom:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.reslist{list-style:none;margin:0;padding:0}
+.reslist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border);font-size:13px}
+.reslist li:first-child{border-top:0}
+.resh{display:flex;align-items:center;gap:8px;font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border)}
+.resh.rej{color:var(--badge-danger-text);background:rgba(255,107,134,.08)}
+.resh.acc{color:var(--success);background:rgba(74,222,128,.08)}
+.pager{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;margin-top:6px}
+.pager .pg{display:flex;gap:4px}
+.pager .pg span{min-width:28px;text-align:center;padding:3px 6px;border-radius:6px;border:1px solid var(--border)}
+.pager .pg span.on{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.empty{text-align:center;padding:28px 16px;border:1px dashed var(--border);border-radius:8px}
+.empty .big{font-size:15px;margin-bottom:6px}
+.collapse{color:var(--muted);font-size:13px;border-top:1px solid var(--border);padding-top:12px;margin-bottom:16px}
+.ex-item{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border)}
+.ex-item:first-child{border-top:0}
+@media (max-width:900px){.grid-detail,.two{grid-template-columns:1fr}.states{grid-template-columns:1fr}.mh{gap:10px;overflow-x:auto}}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>DevAssist Hub · SQL module — wireframes (round 1)</h1>
+<p class="lede">Mid-fidelity, theme “Midnight Terminal”. Desktop web, ~1280px frames. Module renders inside a bare router-outlet, so each screen carries its own slim module header. No schema-hint field anywhere (product decision).</p>
+<nav class="anchors">
+  <a href="#s1">1 · Library</a><a href="#s2">2 · Query detail</a><a href="#s3">3 · Save form</a><a href="#s4">4 · Generate</a><a href="#s5">5 · Validate</a><a href="#s6">6 · Edit</a><a href="#s0">First visit</a>
+</nav>
+
+<!-- ============ 1 LIBRARY ============ -->
+<section class="screen" id="s1">
+<h2><span class="num">01</span>Library</h2>
+<p class="sub">FR27 browse / search / filter · FR28 copy &amp; usage signals. Layout: “GitHub list” — one full-width column of cards.</p>
+<div class="frame"><div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">devassist.internal/sql/library?sort=newest</div></div>
+<div class="viewport">
+  <header class="mh"><div class="brand">DevAssist Hub<span class="sep">/</span>SQL</div>
+    <nav class="tabs-top"><a class="on" href="#s1">Library</a><a href="#s4">Generate</a><a href="#s5">Validate</a></nav>
+    <div class="spacer"></div><button class="btn primary">+ New query</button><span class="chip-user"><span class="avatar">S</span>sami ▾</span></header>
+  <div class="content">
+    <div class="row" style="margin-bottom:10px">
+      <input class="input focus-demo" style="flex:1;min-width:320px" placeholder="Search title or description…">
+      <span class="seglbl">Sort</span><select class="select"><option>Newest</option><option>Most used</option><option>Recently used</option><option>Title</option></select>
+    </div>
+    <div class="filters">
+      <select class="select"><option>Tags: reporting, orders ▾</option></select>
+      <select class="select"><option>Author: anyone ▾</option></select>
+      <span class="toggle"><span class="switch"></span>LLM-generated only</span>
+      <span class="seglbl">Read-only</span><span class="seg"><span class="on">Any</span><span>Yes</span><span>No</span></span>
+      <span class="seglbl">Deprecated</span><span class="seg"><span class="on">Hide</span><span>Show</span></span>
+      <a class="small" href="#s1">Clear filters</a>
+    </div>
+
+    <article class="card qcard">
+      <h3><a href="#s2">Weekly orders by region</a></h3>
+      <p class="excerpt">Order count and revenue per region for the last full ISO week. Use for the Monday ops review or when sales asks for regional trends; excludes test accounts.</p>
+      <div class="meta">sami · updated 3 days ago</div>
+      <div class="row" style="margin-bottom:10px"><span class="tag">reporting</span><span class="tag">orders</span><span class="badge b-info">LLM-generated</span><span class="muted small">Used 14× · last 2 weeks ago</span></div>
+      <div class="code clip"><button class="btn sm copy">Copied ✓</button><pre><span class="k">SELECT</span> r.name <span class="k">AS</span> region,
+       <span class="f">COUNT</span>(o.id) <span class="k">AS</span> orders,
+       <span class="f">SUM</span>(o.total_amount) <span class="k">AS</span> revenue
+<span class="k">FROM</span> orders o
+<span class="k">JOIN</span> regions r <span class="k">ON</span> r.id = o.region_id
+<span class="k">WHERE</span> o.created_at &gt;= <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">'7 days'</span>
+  <span class="k">AND</span> o.created_at &lt; <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>())
+  <span class="k">AND</span> <span class="k">NOT</span> o.is_test
+<span class="k">GROUP BY</span> r.name
+<span class="k">ORDER BY</span> revenue <span class="k">DESC</span>;</pre><a class="btn sm showall" href="#s2">Show all (10 lines)</a></div>
+    </article>
+
+    <article class="card qcard">
+      <h3><a href="#s2">Top customers by revenue</a></h3>
+      <p class="excerpt">Top 50 customers by lifetime paid revenue with their first order date. Good starting point for account-management lists.</p>
+      <div class="meta">leila · updated 1 month ago</div>
+      <div class="row" style="margin-bottom:10px"><span class="tag">reporting</span><span class="muted small">Used 6× · last 5 days ago</span></div>
+      <div class="code"><button class="btn sm copy">Copy</button><pre><span class="k">SELECT</span> c.id, c.company_name, <span class="f">MIN</span>(o.created_at) <span class="k">AS</span> first_order,
+       <span class="f">SUM</span>(o.total_amount) <span class="k">AS</span> lifetime_revenue
+<span class="k">FROM</span> customers c <span class="k">JOIN</span> orders o <span class="k">ON</span> o.customer_id = c.id
+<span class="k">WHERE</span> o.status = <span class="s">'paid'</span>
+<span class="k">GROUP BY</span> c.id, c.company_name <span class="k">ORDER BY</span> lifetime_revenue <span class="k">DESC LIMIT</span> <span class="n">50</span>;</pre></div>
+    </article>
+
+    <article class="card qcard">
+      <h3><a href="#s2">Archive cancelled orders</a></h3>
+      <p class="excerpt">Moves orders cancelled more than 90 days ago into the archived state. Kept for reference only — the nightly job does this now.</p>
+      <div class="meta">karim · updated 4 months ago</div>
+      <div class="row" style="margin-bottom:10px"><span class="tag">ops</span><span class="badge b-danger">Not read-only</span><span class="badge b-neutral">Deprecated</span><span class="muted small">Used 2× · last 3 months ago</span></div>
+      <div class="code"><button class="btn sm copy">Copy</button><pre><span class="k">UPDATE</span> orders <span class="k">SET</span> status = <span class="s">'archived'</span>
+<span class="k">WHERE</span> status = <span class="s">'cancelled'</span>
+  <span class="k">AND</span> cancelled_at &lt; <span class="f">now</span>() - <span class="k">interval</span> <span class="s">'90 days'</span>;</pre></div>
+      <div class="banner danger" style="margin-top:8px;padding:6px 10px"><span class="ico">!</span><span>Copied. <b>This query is not read-only</b> — it modifies data.</span></div>
+    </article>
+
+    <div class="pager"><span>1–20 of 23</span><span class="pg"><span>‹</span><span class="on">1</span><span>2</span><span>›</span></span></div>
+  </div>
+</div></div>
+
+<div class="states">
+  <div class="state"><span class="state-label">State: empty — no search results</span>
+    <input class="input" style="width:100%;margin-bottom:12px" value="refunds">
+    <div class="empty"><div class="big">No queries match ‘refunds’.</div><div class="muted small" style="margin-bottom:12px">Clear filters or generate one.</div>
+      <div class="row" style="justify-content:center"><button class="btn">Clear filters</button><button class="btn primary">Generate “refunds”</button></div></div>
+  </div>
+  <div class="state"><span class="state-label">State: focus ring (keyboard)</span>
+    <p class="muted small" style="margin-top:0">All interactive controls show a 2px accent outline with 2px offset on :focus-visible. Shown here on the search input (main frame) and a button:</p>
+    <div class="row"><button class="btn primary focus-demo">+ New query</button><button class="btn">Copy</button></div>
+  </div>
+</div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li><b>FR27</b> Search matches title and description; filters combine with AND; Deprecated hidden by default; filter/sort state lives in the URL so links are shareable.</li>
+  <li><b>FR27</b> Sort options: Newest (default), Most used, Recently used, Title. Pagination 20 per page.</li>
+  <li><b>FR28</b> Copy on any card copies the full SQL (not the clipped preview), records a usage event, and flips to “Copied ✓” for ~2s.</li>
+  <li><b>FR28</b> Copying a not-read-only query shows an inline notice “This query is not read-only” under the card.</li>
+  <li>SQL preview clips at 6 lines with a fade and “Show all”, which opens Query detail.</li>
+  <li>Empty search state offers “Clear filters” and a jump to Generate prefilled with the search term.</li>
+</ul></div>
+</section>
+
+<!-- ============ 2 DETAIL ============ -->
+<section class="screen" id="s2">
+<h2><span class="num">02</span>Query detail</h2>
+<p class="sub">FR31 view / deprecate / delete · FR28 copy and usage.</p>
+<div class="frame"><div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">devassist.internal/sql/queries/q_8f21c4</div></div>
+<div class="viewport">
+  <header class="mh"><div class="brand">DevAssist Hub<span class="sep">/</span>SQL</div>
+    <nav class="tabs-top"><a class="on" href="#s1">Library</a><a href="#s4">Generate</a><a href="#s5">Validate</a></nav>
+    <div class="spacer"></div><button class="btn primary">+ New query</button><span class="chip-user"><span class="avatar">S</span>sami ▾</span></header>
+  <div class="content">
+    <div class="crumb"><a href="#s1">Library</a> › Weekly orders by region</div>
+    <h2 style="margin:0 0 8px;font-size:20px">Weekly orders by region</h2>
+    <div class="row" style="margin-bottom:14px"><span class="badge b-info">LLM-generated</span><span class="badge b-success">Read-only ✓</span><span class="tag">reporting</span><span class="tag">orders</span></div>
+    <div class="row" style="margin-bottom:16px"><button class="btn primary">Copy SQL</button><a class="btn" href="#s6">Edit</a><button class="btn">Deprecate</button><button class="btn ghost-danger">Delete</button></div>
+    <div class="grid-detail">
+      <div class="code lines"><pre><span class="l"><span class="c">-- Orders and revenue per region, last full ISO week</span></span><span class="l"><span class="k">SELECT</span> r.name <span class="k">AS</span> region,</span><span class="l">       <span class="f">COUNT</span>(o.id) <span class="k">AS</span> orders,</span><span class="l">       <span class="f">SUM</span>(o.total_amount) <span class="k">AS</span> revenue</span><span class="l"><span class="k">FROM</span> orders o</span><span class="l"><span class="k">JOIN</span> regions r <span class="k">ON</span> r.id = o.region_id</span><span class="l"><span class="k">WHERE</span> o.created_at &gt;= <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">'7 days'</span></span><span class="l">  <span class="k">AND</span> o.created_at &lt; <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>())</span><span class="l">  <span class="k">AND</span> <span class="k">NOT</span> o.is_test</span><span class="l"><span class="k">GROUP BY</span> r.name</span><span class="l"><span class="k">ORDER BY</span> revenue <span class="k">DESC</span>;</span></pre></div>
+      <aside class="card"><dl class="meta-list">
+        <dt style="margin-top:0">Description</dt><dd>Order count and revenue per region for the last full ISO week. Use for the Monday ops review; excludes test accounts.</dd>
+        <dt>Author</dt><dd>sami</dd>
+        <dt>Created · Updated</dt><dd>2026-09-02 · 3 days ago (2026-10-15)</dd>
+        <dt>Dialect</dt><dd>PostgreSQL</dd>
+        <dt>Tags</dt><dd><span class="tag">reporting</span> <span class="tag">orders</span></dd>
+        <dt>Origin</dt><dd><span class="badge b-info">LLM-generated</span><div class="muted small" style="margin-top:4px">Original prompt: “orders per region last week”</div></dd>
+        <dt>Usage</dt><dd>Used 14× · last used 2 weeks ago</dd>
+        <dt>Read-only</dt><dd style="color:var(--success)">✓ Single SELECT</dd>
+        <dt>Notes</dt><dd>Assumes created_at is UTC.</dd>
+        <dt>Team examples</dt><dd class="muted">Indexed for team examples ✓</dd>
+      </dl></aside>
+    </div>
+  </div>
+</div></div>
+
+<div class="states">
+  <div class="state"><span class="state-label">State: deprecated variant</span>
+    <div class="banner neutral" style="margin-bottom:10px"><span class="ico">i</span><span><b>Deprecated:</b> replaced by <a href="#s2">‘Weekly orders by region v2’</a> — reason: uses old status codes</span></div>
+    <div class="row"><span class="badge b-neutral">Deprecated</span><span class="badge b-info">LLM-generated</span></div>
+    <p class="muted small">Actions row shows “Undeprecate” instead of “Deprecate”. Hidden from Library unless Deprecated: Show; excluded from team examples.</p>
+  </div>
+  <div class="state"><span class="state-label">State: not-read-only variant</span>
+    <div class="row" style="margin-bottom:8px"><span class="badge b-danger">Not read-only</span><span class="tag">ops</span></div>
+    <div class="banner danger"><span class="ico">!</span><div><b>Not read-only.</b> Validation reasons:
+      <ul class="reslist" style="margin-top:6px"><li><span class="code-chip b-danger">NON_SELECT_STATEMENT</span><span>UPDATE statements are not read-only</span></li></ul></div></div>
+    <p class="muted small">Copy still allowed; shows the not-read-only notice. Never used as a team example.</p>
+  </div>
+  <div class="state"><span class="state-label">State: delete confirmation modal</span>
+    <div class="modal-wrap"><div class="modal"><h3>Delete ‘Weekly orders by region’?</h3>
+      <p class="muted" style="margin:0">It will be removed from the library and team examples.</p>
+      <div class="actions"><button class="btn focus-demo">Cancel</button><button class="btn danger">Delete</button></div></div></div>
+  </div>
+  <div class="state"><span class="state-label">State: deprecate modal</span>
+    <div class="modal-wrap"><div class="modal"><h3>Deprecate ‘Weekly orders by region’</h3>
+      <div class="field"><label class="lbl">Reason <span class="req">*</span><span class="count">22/500</span></label><textarea class="textarea" rows="2">Uses old status codes</textarea></div>
+      <div class="field" style="margin-bottom:0"><label class="lbl">Replaced by <span class="count">optional</span></label><select class="select" style="width:100%"><option>Weekly orders by region v2 — sami</option></select></div>
+      <div class="actions"><button class="btn">Cancel</button><button class="btn primary">Deprecate</button></div></div></div>
+  </div>
+</div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li><b>FR31</b> Detail shows all metadata incl. original prompt for LLM-generated queries and team-example index status.</li>
+  <li><b>FR28</b> “Copy SQL” copies the whole statement and records a usage event; counter updates in place.</li>
+  <li><b>FR31</b> Deprecate requires a reason; “Replaced by” is an optional picker of non-deprecated queries; the banner links to the replacement.</li>
+  <li><b>FR31</b> Delete is a ghost-danger action behind a confirmation modal; focus starts on Cancel; on success return to Library with a toast.</li>
+  <li>Not-read-only queries list each validation reason code (section 5 codes) beside a plain-language explanation.</li>
+</ul></div>
+</section>
+
+<!-- ============ 3 SAVE ============ -->
+<section class="screen" id="s3">
+<h2><span class="num">03</span>Save form</h2>
+<p class="sub">FR1 save · FR29 save from generated SQL · FR34 (Could) description hint.</p>
+<div class="frame"><div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">devassist.internal/sql/queries/new?from=generate</div></div>
+<div class="viewport">
+  <header class="mh"><div class="brand">DevAssist Hub<span class="sep">/</span>SQL</div>
+    <nav class="tabs-top"><a href="#s1">Library</a><a class="on" href="#s4">Generate</a><a href="#s5">Validate</a></nav>
+    <div class="spacer"></div><button class="btn primary">+ New query</button><span class="chip-user"><span class="avatar">S</span>sami ▾</span></header>
+  <div class="content narrow">
+    <h2 style="margin:0 0 4px;font-size:20px">Save to library</h2>
+    <p class="muted small" style="margin:0 0 16px">From generated SQL · Original prompt: “orders per region last week vs the week before”</p>
+    <div class="field"><label class="lbl">SQL <span class="count">editable</span></label>
+<textarea class="textarea code" rows="7" style="color:var(--sx-id)">SELECT 'this_week' AS period, r.name AS region, COUNT(o.id) AS orders
+FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at >= date_trunc('week', now())
+GROUP BY r.name
+UNION ALL
+SELECT 'last_week', r.name, COUNT(o.id) FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at >= date_trunc('week', now()) - interval '7 days' AND o.created_at < date_trunc('week', now())
+GROUP BY r.name;</textarea></div>
+    <div class="field"><label class="lbl">Title <span class="req">*</span><span class="count">0/200</span></label><input class="input" style="width:100%" placeholder="e.g. Orders per region, week over week"></div>
+    <div class="field"><label class="lbl">Description <span class="req">*</span><span class="count">0/2000</span></label><textarea class="textarea" rows="3" placeholder=""></textarea><div class="help">What does it return and when should a teammate use it?</div></div>
+    <div class="collapse">More options ▸ <span class="small">(Tags, Notes, Dialect)</span></div>
+    <div class="row"><button class="btn primary">Save</button><button class="btn">Cancel</button></div>
+  </div>
+</div></div>
+<div class="states">
+  <div class="state"><span class="state-label">State: validation error — description empty</span>
+    <div class="field"><label class="lbl">Title <span class="req">*</span><span class="count">36/200</span></label><input class="input" style="width:100%" value="Orders per region, week over week"></div>
+    <div class="field" style="margin-bottom:8px"><label class="lbl">Description <span class="req">*</span><span class="count">0/2000</span></label><textarea class="textarea invalid" rows="2"></textarea><div class="err">Description is required</div></div>
+    <div class="row"><button class="btn primary">Save</button><button class="btn">Cancel</button></div>
+  </div>
+  <div class="state"><span class="state-label">State: more options expanded</span>
+    <div class="collapse" style="border:0;padding:0;margin-bottom:8px">More options ▾</div>
+    <div class="field"><label class="lbl">Tags</label><input class="input" style="width:100%" value="reporting, orders"></div>
+    <div class="field"><label class="lbl">Notes</label><textarea class="textarea" rows="2">Assumes created_at is UTC.</textarea></div>
+    <div class="field" style="margin-bottom:0"><label class="lbl">Dialect</label><select class="select"><option>PostgreSQL</option></select></div>
+  </div>
+  <div class="state"><span class="state-label">State: post-save toasts</span>
+    <div style="display:grid;gap:10px;justify-items:start">
+      <div class="toast"><span style="color:var(--success)">✓</span>Saved · added to team examples <a href="#s2" class="small">View</a></div>
+      <div class="toast warn"><span style="color:var(--warning)">!</span>Saved · not yet indexed (team examples unavailable)</div>
+    </div>
+    <p class="muted small">After save the user lands on Query detail; toast auto-dismisses after ~5s.</p>
+  </div>
+</div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li><b>FR1</b> Title (≤200) and Description (≤2000) required; counters update live; errors are inline under the field and announced.</li>
+  <li><b>FR29</b> Opened from Generate: SQL and original prompt carry over; LLM-generated flag set automatically; SQL stays editable.</li>
+  <li><b>FR34</b> (Could) Helper text nudges a description that makes the query findable and useful as a team example.</li>
+  <li>Tags, Notes, Dialect sit behind “More options ▸” (collapsed by default; Dialect defaults to PostgreSQL).</li>
+  <li>Toast distinguishes indexed vs. not-yet-indexed (embedding service down) — save never fails because indexing failed.</li>
+</ul></div>
+</section>
+
+<!-- ============ 4 GENERATE ============ -->
+<section class="screen" id="s4">
+<h2><span class="num">04</span>Generate</h2>
+<p class="sub">FR29 generate · FR30 examples &amp; warnings · FR13–FR19 generation pipeline and safety checks.</p>
+<div class="frame"><div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">devassist.internal/sql/generate</div></div>
+<div class="viewport">
+  <header class="mh"><div class="brand">DevAssist Hub<span class="sep">/</span>SQL</div>
+    <nav class="tabs-top"><a href="#s1">Library</a><a class="on" href="#s4">Generate</a><a href="#s5">Validate</a></nav>
+    <div class="spacer"></div><button class="btn primary">+ New query</button><span class="chip-user"><span class="avatar">S</span>sami ▾</span></header>
+  <div class="content">
+    <div class="cmdbar">
+      <textarea class="textarea" rows="1" style="font-size:15px;padding:10px 12px" placeholder="Describe the data you need, e.g. orders per region last week vs the week before">orders per region last week vs the week before</textarea>
+      <div class="row2"><span class="muted small">Don't include personal data — prompts and team examples are sent to an external AI model.</span>
+        <span class="row"><span class="count muted small" style="font-family:var(--mono)">47/1000</span><button class="btn primary">Generate</button></span></div>
+    </div>
+    <div style="margin-top:18px">
+      <nav class="rtabs"><a class="on" href="#s4">SQL</a><a href="#s4">Examples (3)</a><a class="warn" href="#s4">Warnings (1)</a></nav>
+      <div class="rpanel">
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn">Copy</button><a class="btn primary" href="#s3">Save to library</a></div>
+        <div class="code"><pre><span class="k">SELECT</span> <span class="s">'this_week'</span> <span class="k">AS</span> period, r.name <span class="k">AS</span> region, <span class="f">COUNT</span>(o.id) <span class="k">AS</span> orders
+<span class="k">FROM</span> orders o
+<span class="k">JOIN</span> regions r <span class="k">ON</span> r.id = o.region_id
+<span class="k">WHERE</span> o.created_at &gt;= <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">'7 days'</span>
+  <span class="k">AND</span> o.created_at &lt; <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>())
+<span class="k">GROUP BY</span> r.name
+<span class="k">UNION ALL</span>
+<span class="k">SELECT</span> <span class="s">'week_before'</span>, r.name, <span class="f">COUNT</span>(o.id)
+<span class="k">FROM</span> orders o
+<span class="k">JOIN</span> regions r <span class="k">ON</span> r.id = o.region_id
+<span class="k">WHERE</span> o.created_at &gt;= <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">'14 days'</span>
+  <span class="k">AND</span> o.created_at &lt; <span class="f">date_trunc</span>(<span class="s">'week'</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">'7 days'</span>
+<span class="k">GROUP BY</span> r.name
+<span class="k">ORDER BY</span> region, period;</pre></div>
+      </div>
+      <div class="safety" style="margin-top:12px"><b>Safety note.</b> Verified to be a single read-only SELECT structure. Not verified to be correct, fast, or safe on your schema. Run generated SQL as a read-only database user.</div>
+    </div>
+  </div>
+</div></div>
+<div class="states">
+  <div class="state"><span class="state-label">State: generating</span>
+    <div class="cmdbar"><textarea class="textarea" rows="1" disabled>orders per region last week vs the week before</textarea>
+      <div class="row2"><span class="muted small">Finding similar team queries, then generating…</span><button class="btn primary" disabled>Generating…</button></div></div>
+  </div>
+  <div class="state"><span class="state-label">State: Examples tab</span>
+    <nav class="rtabs"><a href="#s4">SQL</a><a class="on" href="#s4">Examples (3)</a><a class="warn" href="#s4">Warnings (1)</a></nav>
+    <div class="rpanel"><p class="muted small" style="margin-top:0">Saved team queries sent to the model as examples:</p>
+      <div class="ex-item"><a href="#s2">Weekly orders by region</a><span class="muted small">sami</span></div>
+      <div class="ex-item"><a href="#s2">Daily order volume by channel</a><span class="muted small">leila</span></div>
+      <div class="ex-item"><a href="#s2">Regional revenue month to date</a><span class="muted small">karim</span></div></div>
+  </div>
+  <div class="state"><span class="state-label">State: Warnings tab (no similar queries)</span>
+    <nav class="rtabs"><a href="#s4">SQL</a><a href="#s4">Examples (0)</a><a class="on warn" href="#s4">Warnings (1)</a></nav>
+    <div class="rpanel"><div class="banner warn"><span class="ico" style="color:var(--warning)">!</span><span>No similar queries found — verify table names in the generated SQL.</span></div></div>
+  </div>
+  <div class="state"><span class="state-label">State: error — LLM_UNAVAILABLE</span>
+    <div class="banner danger"><span class="ico" style="color:var(--badge-danger-text)">!</span><div><b>SQL generation temporarily unavailable.</b> You can save a query manually.
+      <div class="row" style="margin-top:8px"><a class="btn" href="#s3">Save a query manually</a><button class="btn ghost" disabled>Retry in ~20s</button></div></div></div>
+  </div>
+  <div class="state"><span class="state-label">State: error — SQL_REJECTED</span>
+    <div class="banner danger" style="margin-bottom:8px"><span class="ico" style="color:var(--badge-danger-text)">!</span><span><b>The generated SQL was rejected</b> by the read-only check. It is shown for reference only and cannot be copied or saved from here.</span></div>
+    <div class="code" style="margin-bottom:8px"><pre><span class="k">WITH</span> moved <span class="k">AS</span> (<span class="k">DELETE FROM</span> orders <span class="k">WHERE</span> status = <span class="s">'cancelled'</span> <span class="k">RETURNING</span> *)
+<span class="k">SELECT</span> <span class="f">COUNT</span>(*) <span class="k">FROM</span> moved;</pre></div>
+    <ul class="reslist"><li><span class="code-chip b-danger">DATA_MODIFYING_CTE</span><span>CTE ‘moved’ contains a DELETE</span></li></ul>
+    <div class="row" style="margin-top:6px"><button class="btn">Rephrase and retry</button></div>
+  </div>
+  <div class="state"><span class="state-label">State: error — LLM_REFUSED</span>
+    <div class="banner warn"><span class="ico" style="color:var(--warning)">!</span><span>The model declined to generate SQL for this request. Try rephrasing.</span></div>
+  </div>
+</div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li><b>FR29</b> Prompt 1–1000 chars; textarea grows from one row; Ctrl/⌘+Enter submits; button shows “Generating…” and is disabled while in flight.</li>
+  <li><b>FR30</b> Tabs show counts; Warnings label turns warning-colored when count &gt; 0 so warnings never hide silently.</li>
+  <li><b>FR13–FR16</b> Similar saved queries are retrieved as examples; with none, a warning is added rather than blocking generation.</li>
+  <li><b>FR17–FR19</b> Output is validated as a single read-only SELECT before display; rejections show reason codes and no Copy/Save.</li>
+  <li>The Safety note sits outside the tabs and is always visible with any SQL result.</li>
+  <li>LLM_UNAVAILABLE offers a manual save path and a retry countdown; LLM_REFUSED asks to rephrase. No schema-hint field.</li>
+</ul></div>
+</section>
+
+<!-- ============ 5 VALIDATE ============ -->
+<section class="screen" id="s5">
+<h2><span class="num">05</span>Validate</h2>
+<p class="sub">FR32 validate pasted SQL · FR12 structural read-only check.</p>
+<div class="frame"><div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">devassist.internal/sql/validate</div></div>
+<div class="viewport">
+  <header class="mh"><div class="brand">DevAssist Hub<span class="sep">/</span>SQL</div>
+    <nav class="tabs-top"><a href="#s1">Library</a><a href="#s4">Generate</a><a class="on" href="#s5">Validate</a></nav>
+    <div class="spacer"></div><button class="btn primary">+ New query</button><span class="chip-user"><span class="avatar">S</span>sami ▾</span></header>
+  <div class="content">
+    <h2 style="margin:0 0 2px;font-size:20px">Validate SQL</h2>
+    <p class="muted" style="margin:0 0 12px">Checks the statement structure — not whether it's correct or safe on your schema.</p>
+<textarea class="textarea code" rows="6" placeholder="Paste a PostgreSQL statement…">WITH x AS (INSERT INTO audit_log(event) VALUES ('report_run') RETURNING id)
+SELECT o.id, o.total_amount FROM orders o WHERE o.created_at > now() - interval '1 day';</textarea>
+    <div class="row" style="margin:10px 0 18px"><button class="btn primary">Validate</button><span class="muted small">Ctrl/⌘ + Enter</span></div>
+    <div class="two">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="resh rej">✕ Rejected <span class="muted small" style="font-weight:400">· 1 problem</span></div>
+        <div style="padding:12px 14px">
+          <ul class="reslist"><li><span class="code-chip b-danger">DATA_MODIFYING_CTE</span><span>CTE ‘x’ contains an INSERT</span></li></ul>
+          <div class="muted small" style="margin:10px 0 4px">Normalized SQL</div>
+          <div class="code"><pre><span class="k">WITH</span> x <span class="k">AS</span> (<span class="k">INSERT INTO</span> audit_log (event) <span class="k">VALUES</span> (<span class="s">'report_run'</span>) <span class="k">RETURNING</span> id)
+<span class="k">SELECT</span> o.id, o.total_amount
+<span class="k">FROM</span> orders o
+<span class="k">WHERE</span> o.created_at &gt; <span class="f">now</span>() - <span class="k">interval</span> <span class="s">'1 day'</span>;</pre></div>
+          <div class="safety" style="margin-top:10px"><b>Safety note.</b> Structural check only. Not verified to be correct, fast, or safe on your schema. Run SQL as a read-only database user.</div>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="resh acc">✓ Accepted <span class="muted small" style="font-weight:400">· single read-only SELECT</span></div>
+        <div style="padding:12px 14px">
+          <div class="muted small" style="margin-bottom:4px">Warnings (1)</div>
+          <ul class="reslist"><li><span class="code-chip b-warning">pg_sleep</span><span>pg_sleep may cause performance issues</span></li></ul>
+          <div class="muted small" style="margin:10px 0 4px">Normalized SQL</div>
+          <div class="code"><pre><span class="k">SELECT</span> o.id, <span class="f">pg_sleep</span>(<span class="n">2</span>)
+<span class="k">FROM</span> orders o
+<span class="k">WHERE</span> o.status = <span class="s">'paid'</span>
+<span class="k">LIMIT</span> <span class="n">10</span>;</pre></div>
+          <div class="row" style="margin-top:8px"><button class="btn sm">Copy</button><a class="btn sm" href="#s3">Save to library</a></div>
+          <div class="safety" style="margin-top:10px"><b>Safety note.</b> Structural check only. Not verified to be correct, fast, or safe on your schema. Run SQL as a read-only database user.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li><b>FR32</b> One paste area, one action; result panel replaces the previous result (two shown side by side here for review only).</li>
+  <li><b>FR12</b> Rejection lists every failing rule with its error code chip and a plain-language message naming the offending element.</li>
+  <li><b>FR12</b> Accepted results can still carry warnings (e.g. pg_sleep); warnings never block.</li>
+  <li>Normalized SQL is shown for both outcomes; Accepted adds Copy and “Save to library”.</li>
+  <li>Safety note visible in both outcomes; the explainer line sets expectations before the user validates.</li>
+</ul></div>
+</section>
+
+<!-- ============ 6 EDIT ============ -->
+<section class="screen" id="s6">
+<h2><span class="num">06</span>Edit</h2>
+<p class="sub">FR5 edit · FR31 manage.</p>
+<div class="frame"><div class="chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">devassist.internal/sql/queries/q_8f21c4/edit</div></div>
+<div class="viewport">
+  <header class="mh"><div class="brand">DevAssist Hub<span class="sep">/</span>SQL</div>
+    <nav class="tabs-top"><a class="on" href="#s1">Library</a><a href="#s4">Generate</a><a href="#s5">Validate</a></nav>
+    <div class="spacer"></div><button class="btn primary">+ New query</button><span class="chip-user"><span class="avatar">S</span>sami ▾</span></header>
+  <div class="content narrow">
+    <div class="crumb"><a href="#s1">Library</a> › <a href="#s2">Weekly orders by region</a> › Edit</div>
+    <h2 style="margin:0 0 16px;font-size:20px">Edit query</h2>
+    <div class="field"><label class="lbl">SQL</label>
+<textarea class="textarea code" rows="6" style="color:var(--sx-id)">SELECT r.name AS region, COUNT(o.id) AS orders, SUM(o.total_amount) AS revenue
+FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at >= date_trunc('week', now()) - interval '7 days'
+  AND o.created_at < date_trunc('week', now()) AND NOT o.is_test
+GROUP BY r.name ORDER BY revenue DESC;</textarea>
+      <div class="help">Changing SQL re-checks read-only status and team-example indexing.</div></div>
+    <div class="field"><label class="lbl">Title <span class="req">*</span><span class="count">23/200</span></label><input class="input" style="width:100%" value="Weekly orders by region"></div>
+    <div class="field"><label class="lbl">Description <span class="req">*</span><span class="count">118/2000</span></label><textarea class="textarea" rows="3">Order count and revenue per region for the last full ISO week. Use for the Monday ops review; excludes test accounts.</textarea><div class="help">What does it return and when should a teammate use it?</div></div>
+    <div class="collapse">More options ▸ <span class="small">(Tags: reporting, orders · Notes · Dialect: PostgreSQL)</span></div>
+    <div class="row"><button class="btn primary">Save changes</button><a class="btn" href="#s2">Cancel</a></div>
+  </div>
+</div></div>
+<div class="states">
+  <div class="state"><span class="state-label">State: conflict (409)</span>
+    <div class="banner warn"><span class="ico" style="color:var(--warning)">!</span><div>Someone else saved changes to this query. Reload to see them — your edits stay in the form until you leave.
+      <div class="row" style="margin-top:8px"><button class="btn">Reload</button></div></div></div>
+    <p class="muted small">Banner sits above the form; “Save changes” stays enabled but will re-conflict until reloaded.</p>
+  </div>
+</div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li><b>FR5</b> Same form as Save, prepopulated; Title/Description rules identical.</li>
+  <li><b>FR5</b> Editing SQL triggers a fresh read-only check and re-index on save; badges on detail update accordingly.</li>
+  <li><b>FR31</b> Optimistic concurrency: a 409 shows the conflict banner; local edits are kept until navigation.</li>
+  <li>Cancel returns to Query detail; leaving with unsaved edits asks for confirmation.</li>
+</ul></div>
+</section>
+
+<!-- ============ FIRST VISIT ============ -->
+<section class="screen" id="s0">
+<h2><span class="num">00</span>First visit — display name</h2>
+<p class="sub">Identity for authorship (no auth in v1). Appears over any SQL screen on first visit.</p>
+<div class="states" style="margin-top:0">
+  <div class="state"><span class="state-label">State: first visit modal</span>
+    <div class="modal-wrap"><div class="modal"><h3>What should we call you?</h3>
+      <div class="field" style="margin-bottom:6px"><label class="lbl">Display name</label><input class="input focus-demo" style="width:100%" value="sami"></div>
+      <div class="help">Stored in this browser and shown as the author of queries you save.</div>
+      <div class="actions"><button class="btn primary">Continue</button></div></div></div>
+  </div>
+</div>
+<div class="notes"><h4>Behavior notes</h4><ul>
+  <li>Shown once per browser; Continue requires a non-empty name; the header chip “sami ▾” lets the user change it later.</li>
+  <li>Name is attached as author on save; not a security boundary.</li>
+</ul></div>
+</section>
+</div>
+</body>
+</html>
