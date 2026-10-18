@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     ResponseEntity<ErrorResponse> handleInvalidBody(MethodArgumentNotValidException ex) {
         List<Map<String, String>> details = new ArrayList<>();
         for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
-            details.add(detail(toSnakeCase(fe.getField()), fe.getDefaultMessage()));
+            details.add(detail(toSnakeCase(stripIndex(fe.getField())), fe.getDefaultMessage()));
         }
         ex.getBindingResult().getGlobalErrors().forEach(ge -> details.add(detail(null, ge.getDefaultMessage())));
         return validation(details);
@@ -135,6 +135,12 @@ public class GlobalExceptionHandler {
         m.put("field", field);
         m.put("message", message);
         return m;
+    }
+
+    /** {@code tags[0]} -> {@code tags}: element errors are reported on the collection field. */
+    private static String stripIndex(String field) {
+        int i = field.indexOf('[');
+        return i < 0 ? field : field.substring(0, i);
     }
 
     private static String lastNode(String path) {
