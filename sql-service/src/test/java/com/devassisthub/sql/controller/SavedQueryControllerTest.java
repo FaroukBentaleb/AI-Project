@@ -18,6 +18,9 @@ import com.devassisthub.sql.exception.ApiException;
 import com.devassisthub.sql.exception.GlobalExceptionHandler;
 import com.devassisthub.sql.service.SavedQueryService;
 import java.util.List;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.mockito.ArgumentCaptor;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -210,5 +213,42 @@ class SavedQueryControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.field").value("id"));
+    }
+
+    @Test
+    void listDefaultsAndReturnsPagingMetadata() throws Exception {
+        SavedQuery q = saved(new CreateSavedQueryRequest("t", "d", "SELECT 1", null, null, null, null, null), "bob");
+        when(service.list(any())).thenAnswer(inv -> new PageImpl<>(List.of(q), inv.getArgument(0), 41));
+        mvc.perform(get("/api/sql/queries"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.total_elements").value(41))
+                .andExpect(jsonPath("$.total_pages").value(3))
+                .andExpect(jsonPath("$.content[0].author").value("bob"))
+                .andExpect(jsonPath("$.content[0].warnings").isArray());
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(service).list(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getSort().getOrderFor("createdAt").isDescending())
+                .isTrue();
+    }
+
+    @Test
+    void listClampsSize() throws Exception {
+        when(service.list(any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(0), 0));
+        mvc.perform(get("/api/sql/queries").param("size", "500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(100));
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"sort,author", "sort,use_count", "sort,title;sideways",
+            "page,-1", "size,0", "page,abc", "size,x"})
+    void listRejectsBadParamsWith400(String name, String value) throws Exception {
+        mvc.perform(get("/api/sql/queries").param(name, value.replace(';', ',')))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.field").value(name));
+        verify(service, never()).list(any());
     }
 }

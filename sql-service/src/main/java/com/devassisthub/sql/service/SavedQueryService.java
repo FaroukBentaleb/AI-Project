@@ -5,6 +5,8 @@ import com.devassisthub.sql.entity.SavedQuery;
 import com.devassisthub.sql.exception.ApiException;
 import com.devassisthub.sql.exception.GlobalExceptionHandler;
 import com.devassisthub.sql.repository.SavedQueryRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,5 +42,10 @@ public class SavedQueryService {
     public SavedQuery get(Long id) {
         return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
                 GlobalExceptionHandler.NOT_FOUND, "Saved query " + id + " not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SavedQuery> list(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 }
