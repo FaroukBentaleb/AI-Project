@@ -20,13 +20,20 @@ public record SavedQueryResponse(
         OffsetDateTime updatedAt,
         @JsonProperty("is_llm_generated") boolean isLlmGenerated,
         String originalNlPrompt,
+        boolean deprecated,
+        String deprecatedReason,
+        OffsetDateTime deprecatedAt,
+        Long replacedBy,
+        long useCount,
+        OffsetDateTime lastUsedAt,
         Integer version,
         List<String> warnings) {
 
     public static SavedQueryResponse from(SavedQuery q, List<String> warnings) {
         return new SavedQueryResponse(q.getId(), q.getTitle(), q.getDescription(), q.getSqlContent(),
                 List.copyOf(q.getTags()), q.getDialect(), q.getNotes(), q.getAuthor(), q.getCreatedAt(),
-                q.getUpdatedAt(), q.isLlmGenerated(), q.getOriginalNlPrompt(), q.getVersion(),
+                q.getUpdatedAt(), q.isLlmGenerated(), q.getOriginalNlPrompt(), q.isDeprecated(),
+                q.getDeprecatedReason(), q.getDeprecatedAt(), q.getReplacedBy(), q.getUseCount(), q.getLastUsedAt(), q.getVersion(),
                 warnings == null ? List.of() : List.copyOf(warnings));
     }
 }

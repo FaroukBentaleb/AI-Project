@@ -1,0 +1,18 @@
+.save-page { box-sizing: border-box; max-width: 860px; margin: 0 auto; padding: 20px 24px 40px; }
+.form-banner { margin-bottom: 16px; color: var(--sql-text-primary); }
+.field { margin-bottom: 16px; }
+.label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.counter { font: 400 12px/1.4 var(--sql-font-code); font-variant-numeric: tabular-nums; color: var(--sql-text-muted); }
+.counter.over { color: var(--sql-badge-danger-text); }
+textarea.text-input { resize: vertical; font: 400 14px/1.5 var(--sql-font-ui); }
+.sql-textarea {
+  box-sizing: border-box; width: 100%; min-height: 160px; resize: vertical; padding: 10px 12px;
+  background: var(--sql-code-bg); color: #e8f1ff; font: 400 13px/1.6 var(--sql-font-code);
+  border: 1px solid var(--sql-input-border); border-radius: 6px; tab-size: 2;
+}
+.text-input.invalid, .sql-textarea.invalid { border-color: var(--sql-danger); }
+sql-tags-input.invalid { display: block; border-radius: 6px; outline: 1px solid var(--sql-danger); }
+.field-error { margin: 4px 0 0; font-size: 12px; color: var(--sql-badge-danger-text); }
+.more-toggle { padding-left: 0; margin-bottom: 12px; }
+.more { padding-top: 4px; }
+.form-actions { display: flex; gap: 8px; margin-top: 20px; }

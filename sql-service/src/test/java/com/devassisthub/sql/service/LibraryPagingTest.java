@@ -35,10 +35,14 @@ class LibraryPagingTest {
                 .isEqualTo(Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")));
         assertThat(LibraryPaging.of(0, 20, " created_at , ASC ").getSort())
                 .isEqualTo(Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id")));
+        assertThat(LibraryPaging.of(0, 20, "use_count,desc").getSort())
+                .isEqualTo(Sort.by(Sort.Order.desc("useCount"), Sort.Order.desc("id")));
+        assertThat(LibraryPaging.of(0, 20, "last_used_at").getSort())
+                .isEqualTo(Sort.by(Sort.Order.asc("lastUsedAt"), Sort.Order.asc("id")));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"author", "use_count", "last_used_at", "createdAt", "sql_content", "id",
+    @ValueSource(strings = {"author", "useCount", "lastUsedAt", "createdAt", "sql_content", "id",
             "title,sideways", "title,asc,extra", ",desc"})
     void unknownSortIs400(String sort) {
         assertBadRequest(() -> LibraryPaging.of(0, 20, sort), "sort");

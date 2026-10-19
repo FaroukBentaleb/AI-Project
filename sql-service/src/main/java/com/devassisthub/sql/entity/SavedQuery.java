@@ -59,6 +59,32 @@ public class SavedQuery {
     @Column(name = "original_nl_prompt", columnDefinition = "text")
     private String originalNlPrompt;
 
+    @Column(nullable = false)
+    private boolean deleted;
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
+    @Column(nullable = false)
+    private boolean deprecated;
+
+    @Column(name = "deprecated_reason", columnDefinition = "text")
+    private String deprecatedReason;
+
+    @Column(name = "deprecated_at")
+    private OffsetDateTime deprecatedAt;
+
+    /** Self-FK to the recommended replacement (V4); plain id keeps the entity flat. */
+    @Column(name = "replaced_by")
+    private Long replacedBy;
+
+    /** Copy counter (FR8); only ever changed by the atomic UPDATE in the repository. */
+    @Column(name = "use_count", nullable = false, insertable = false, updatable = false)
+    private long useCount;
+
+    @Column(name = "last_used_at", insertable = false, updatable = false)
+    private OffsetDateTime lastUsedAt;
+
     @Version
     @Column(nullable = false)
     private Integer version;
@@ -84,5 +110,40 @@ public class SavedQuery {
     public void setLlmGenerated(boolean llmGenerated) { this.llmGenerated = llmGenerated; }
     public String getOriginalNlPrompt() { return originalNlPrompt; }
     public void setOriginalNlPrompt(String originalNlPrompt) { this.originalNlPrompt = originalNlPrompt; }
+    public boolean isDeleted() { return deleted; }
+    public OffsetDateTime getDeletedAt() { return deletedAt; }
+
+    /** Soft delete (FR6): the row stays for history; reads and edits exclude it. */
+    public void markDeleted(OffsetDateTime at) {
+        this.deleted = true;
+        this.deletedAt = at;
+    }
+
+    public boolean isDeprecated() { return deprecated; }
+    public String getDeprecatedReason() { return deprecatedReason; }
+    public OffsetDateTime getDeprecatedAt() { return deprecatedAt; }
+    public Long getReplacedBy() { return replacedBy; }
+
+    /** Deprecate (FR7); re-deprecating updates reason/replacement but keeps the first deprecated_at. */
+    public void markDeprecated(String reason, Long replacedBy, OffsetDateTime at) {
+        if (!this.deprecated) {
+            this.deprecatedAt = at;
+        }
+        this.deprecated = true;
+        this.deprecatedReason = reason;
+        this.replacedBy = replacedBy;
+    }
+
+    /** Restore (FR7): clears every deprecation field. */
+    public void clearDeprecation() {
+        this.deprecated = false;
+        this.deprecatedReason = null;
+        this.deprecatedAt = null;
+        this.replacedBy = null;
+    }
+
+    public long getUseCount() { return useCount; }
+    public OffsetDateTime getLastUsedAt() { return lastUsedAt; }
+
     public Integer getVersion() { return version; }
 }

@@ -82,6 +82,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getError(), ex.getMessage(), ex.getField(), ex.getDetails()));
     }
 
+    /** Lost race between the version check and the flush: same 409 as a stale version. */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    ResponseEntity<ErrorResponse> handleOptimisticLock(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(CONFLICT,
+                "Saved query was modified by someone else; reload and retry", "version", null));
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ErrorResponse> handleNoResource(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse.of(NOT_FOUND, "Resource not found"));

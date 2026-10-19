@@ -218,7 +218,7 @@ class SavedQueryControllerTest {
     @Test
     void listDefaultsAndReturnsPagingMetadata() throws Exception {
         SavedQuery q = saved(new CreateSavedQueryRequest("t", "d", "SELECT 1", null, null, null, null, null), "bob");
-        when(service.list(any())).thenAnswer(inv -> new PageImpl<>(List.of(q), inv.getArgument(0), 41));
+        when(service.list(any(), any())).thenAnswer(inv -> new PageImpl<>(List.of(q), inv.getArgument(1), 41));
         mvc.perform(get("/api/sql/queries"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(0))
@@ -228,27 +228,69 @@ class SavedQueryControllerTest {
                 .andExpect(jsonPath("$.content[0].author").value("bob"))
                 .andExpect(jsonPath("$.content[0].warnings").isArray());
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(service).list(captor.capture());
+        verify(service).list(any(), captor.capture());
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getSort().getOrderFor("createdAt").isDescending())
                 .isTrue();
     }
 
     @Test
     void listClampsSize() throws Exception {
-        when(service.list(any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(0), 0));
+        when(service.list(any(), any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(1), 0));
         mvc.perform(get("/api/sql/queries").param("size", "500"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(100));
     }
 
     @ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"sort,author", "sort,use_count", "sort,title;sideways",
+    @org.junit.jupiter.params.provider.CsvSource({"sort,author", "sort,deleted", "sort,title;sideways",
             "page,-1", "size,0", "page,abc", "size,x"})
     void listRejectsBadParamsWith400(String name, String value) throws Exception {
         mvc.perform(get("/api/sql/queries").param(name, value.replace(';', ',')))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.field").value(name));
-        verify(service, never()).list(any());
+        verify(service, never()).list(any(), any());
+    }
+
+    @Test
+    void listPassesParsedFiltersToService() throws Exception {
+        when(service.list(any(), any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(1), 0));
+        mvc.perform(get("/api/sql/queries").param("q", " orders ").param("tags", "reporting, finance")
+                        .param("author", "alice").param("llm_generated", "TRUE").param("page", "1").param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(5));
+        verify(service).list(eq(new com.devassisthub.sql.service.LibraryFilter(
+                "orders", List.of("reporting", "finance"), "alice", true, null)), any());
+    }
+
+    @Test
+    void listWithoutFiltersUsesEmptyFilter() throws Exception {
+        when(service.list(any(), any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(1), 0));
+        mvc.perform(get("/api/sql/queries").param("q", "  ").param("tags", ","))
+                .andExpect(status().isOk());
+        verify(service).list(eq(com.devassisthub.sql.service.LibraryFilter.NONE), any());
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"llm_generated,maybe", "llm_generated,1",
+            "tags,a;b;c;d;e;f;g;h;i;j;k"})
+    void listRejectsBadFiltersWith400(String name, String value) throws Exception {
+        mvc.perform(get("/api/sql/queries").param(name, value.replace(';', ',')))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.field").value(name));
+        verify(service, never()).list(any(), any());
+    }
+
+    @Test
+    void listRejectsOverlongFiltersWith400() throws Exception {
+        String[][] cases = {{"q", "x".repeat(201)}, {"author", "a".repeat(101)}, {"tags", "t".repeat(51)}};
+        for (String[] c : cases) {
+            mvc.perform(get("/api/sql/queries").param(c[0], c[1]))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.field").value(c[0]));
+        }
+        verify(service, never()).list(any(), any());
     }
 }

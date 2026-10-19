@@ -1,0 +1,67 @@
+/* Midnight Terminal primitives shared by SQL shell components (DESIGN.md). Tokens are custom properties
+   set on the shell host, so they cascade into every SQL screen and never leak into other modules. */
+
+.page-title { font-size: 22px; font-weight: 600; line-height: 1.3; margin: 0 0 8px; color: var(--sql-text-primary); }
+.modal-title { font-size: 16px; font-weight: 600; line-height: 1.4; margin: 0 0 6px; color: var(--sql-text-primary); }
+.muted, .help { color: var(--sql-text-muted); font-size: 14px; margin: 0 0 12px; }
+.label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--sql-text-primary); }
+.placeholder { padding: 20px 24px; }
+
+.text-input {
+  box-sizing: border-box; width: 100%; font: 500 13px/1.4 var(--sql-font-ui);
+  background: var(--sql-surface-raised); color: var(--sql-text-primary);
+  border: 1px solid var(--sql-input-border); border-radius: 6px; padding: 6px 10px;
+}
+.text-input::placeholder { color: var(--sql-text-placeholder); }
+
+.btn {
+  font: 500 13px/1.4 var(--sql-font-ui); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+  border: 1px solid transparent; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--sql-accent); color: var(--sql-accent-text); border-color: var(--sql-accent); }
+.btn-primary:hover:not(:disabled) { background: var(--sql-accent-hover); }
+.btn-primary:disabled { background: var(--sql-accent-disabled); color: var(--sql-accent-disabled-text); border-color: var(--sql-accent-disabled); cursor: not-allowed; }
+.btn-secondary { background: var(--sql-surface-raised); color: var(--sql-text-primary); border-color: var(--sql-input-border); }
+.btn-secondary:hover { border-color: var(--sql-accent); }
+.btn-ghost { background: transparent; color: var(--sql-text-muted); }
+.btn-ghost:hover { background: var(--sql-surface-raised); }
+
+:focus-visible { outline: 2px solid var(--sql-accent); outline-offset: 2px; }
+
+.scrim { position: fixed; inset: 0; background: var(--sql-overlay); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal {
+  box-sizing: border-box; width: calc(100% - 32px); max-width: 440px; padding: 18px;
+  background: var(--sql-surface-raised); border: 1px solid var(--sql-border); border-radius: 10px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); color: var(--sql-text-primary); font: 400 14px/1.5 var(--sql-font-ui);
+}
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* Story 3.2 primitives: small buttons, tags, badges, code blocks, banners, empty states. */
+.btn-sm { padding: 3px 8px; font-size: 12px; }
+.btn:disabled { cursor: not-allowed; }
+.tag {
+  display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 9999px; font-size: 12px;
+  color: var(--sql-text-muted); background: var(--sql-surface-raised); border: 1px solid var(--sql-border);
+}
+.badge { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 9999px; border: 1px solid; font-size: 12px; font-weight: 500; }
+.badge-llm { color: var(--sql-info); background: #b49cff24; border-color: #b49cff66; }
+.badge-deprecated { color: #a5b4c8; background: #94a3b824; border-color: #94a3b866; }
+.badge-usage { color: var(--sql-text-muted); background: var(--sql-surface-raised); border-color: var(--sql-border); }
+.code-block {
+  box-sizing: border-box; margin: 0; padding: 12px 14px; overflow-x: auto; white-space: pre;
+  background: var(--sql-code-bg); border: 1px solid var(--sql-border); border-radius: 8px;
+  color: #e8f1ff; font: 400 13px/1.6 var(--sql-font-code);
+}
+.banner {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid;
+}
+.banner-glyph { font-family: var(--sql-font-code); font-weight: 700; }
+.banner-danger { background: #ff6b8614; border-color: #ff6b8666; }
+.banner-danger .banner-glyph { color: var(--sql-badge-danger-text); }
+.empty-state {
+  padding: 32px 16px; text-align: center; border: 1px dashed var(--sql-border); border-radius: 8px;
+}
+.empty-state p { font-size: 15px; margin: 0 0 12px; }
+.empty-state .empty-actions { display: flex; justify-content: center; gap: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

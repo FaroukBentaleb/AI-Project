@@ -15,11 +15,13 @@ public final class LibraryPaging {
     public static final int DEFAULT_SIZE = 20;
     public static final int MAX_SIZE = 100;
 
-    /** snake_case API name -> entity property. use_count / last_used_at join in Story 1.8. */
+    /** snake_case API name -> entity property. */
     static final Map<String, String> SORT_FIELDS = Map.of(
             "title", "title",
             "created_at", "createdAt",
-            "updated_at", "updatedAt");
+            "updated_at", "updatedAt",
+            "use_count", "useCount",
+            "last_used_at", "lastUsedAt");
 
     private LibraryPaging() {
     }
