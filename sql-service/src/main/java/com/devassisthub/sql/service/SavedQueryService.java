@@ -7,7 +7,12 @@ import com.devassisthub.sql.dto.ReplaceSavedQueryRequest;
 import com.devassisthub.sql.entity.SavedQuery;
 import com.devassisthub.sql.exception.ApiException;
 import com.devassisthub.sql.exception.GlobalExceptionHandler;
+import com.devassisthub.sql.rag.QueryIndexer;
 import com.devassisthub.sql.repository.SavedQueryRepository;
+import com.devassisthub.sql.validation.ReadOnlyValidator;
+import com.devassisthub.sql.validation.ValidationResult;
+import java.util.List;
+import java.util.Objects;
 import java.time.OffsetDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,25 +26,68 @@ public class SavedQueryService {
     public static final String DEFAULT_DIALECT = "postgresql";
 
     private final SavedQueryRepository repository;
+    private final ReadOnlyValidator validator;
+    private final QueryIndexer indexer;
 
-    public SavedQueryService(SavedQueryRepository repository) {
+    public SavedQueryService(SavedQueryRepository repository, ReadOnlyValidator validator, QueryIndexer indexer) {
         this.repository = repository;
+        this.validator = validator;
+        this.indexer = indexer;
     }
 
-    /** Single create path; future validate/syncIndex hooks attach here. */
+    /** Embedded and payload fields (FR-5): a change to any of them triggers re-indexing (FR-23). */
+    private static List<Object> indexedFields(SavedQuery q) {
+        return java.util.Arrays.asList(q.getTitle(), q.getDescription(), q.getSqlContent(), q.getOriginalNlPrompt(),
+                List.copyOf(q.getTags()), q.getReadOnly());
+    }
+
+    /** Re-applies the indexing rule after an edit when an indexed field changed or the flag is out of step. */
+    private SavedQuery syncAfterEdit(SavedQuery saved, List<Object> before) {
+        if (!Objects.equals(before, indexedFields(saved))
+                || QueryIndexer.shouldBeIndexed(saved) != saved.isIndexed()) {
+            indexer.syncIndex(saved);
+        }
+        return saved;
+    }
+
+    /** "CODE: reason" strings as stored in read_only_reasons. Shared with the startup backfill. */
+    public static List<String> reasons(ValidationResult r) {
+        return r.rejections().stream().map(x -> x.code().name() + ": " + x.reason()).toList();
+    }
+
+    /**
+     * Runs the Read-Only Validator and stores the normalized text, flag and reasons (FR-1, FR-5). A blank
+     * normalized text (e.g. an empty fence) keeps the raw text so sql_content is never emptied.
+     */
+    private void setSqlAndValidate(SavedQuery q, String raw) {
+        ValidationResult r = validator.validate(raw);
+        q.setSqlContent(r.normalizedSql().isEmpty() ? raw : r.normalizedSql());
+        q.applyValidation(r.accepted(), reasons(r), r.warnings());
+    }
+
+    /** Single create path; runs the validator, then syncIndex. */
     @Transactional
     public SavedQuery create(CreateSavedQueryRequest request, String author) {
+        return create(request, author, null);
+    }
+
+    /** Create path with a Seed Corpus key (Story 5.5); {@code seedKey} is null for every API create. */
+    @Transactional
+    public SavedQuery create(CreateSavedQueryRequest request, String author, String seedKey) {
         SavedQuery q = new SavedQuery();
         q.setTitle(request.title());
         q.setDescription(request.description());
-        q.setSqlContent(request.sqlContent());
+        setSqlAndValidate(q, request.sqlContent());
         q.setTags(request.tags());
         q.setNotes(request.notes());
         q.setDialect(request.dialect() == null || request.dialect().isBlank() ? DEFAULT_DIALECT : request.dialect());
         q.setLlmGenerated(Boolean.TRUE.equals(request.isLlmGenerated()));
         q.setOriginalNlPrompt(request.originalNlPrompt());
         q.setAuthor(author);
-        return repository.saveAndFlush(q);
+        q.setSeedKey(seedKey);
+        SavedQuery saved = repository.saveAndFlush(q);
+        indexer.syncIndex(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -48,28 +96,30 @@ public class SavedQueryService {
                 GlobalExceptionHandler.NOT_FOUND, "Saved query " + id + " not found"));
     }
 
-    /** Single full-replace path (PUT); future validate/syncIndex hooks attach here. Author/created_at untouched. */
+    /** Single full-replace path (PUT); runs the validator, then syncIndex. Author/created_at untouched. */
     @Transactional
     public SavedQuery replace(Long id, ReplaceSavedQueryRequest request) {
         SavedQuery q = lockedForEdit(id, request.version());
+        List<Object> before = indexedFields(q);
         q.setTitle(request.title());
         q.setDescription(request.description());
-        q.setSqlContent(request.sqlContent());
+        setSqlAndValidate(q, request.sqlContent());
         q.setTags(request.tags());
         q.setNotes(request.notes());
         q.setDialect(request.dialect() == null || request.dialect().isBlank() ? DEFAULT_DIALECT : request.dialect());
         q.setLlmGenerated(Boolean.TRUE.equals(request.isLlmGenerated()));
         q.setOriginalNlPrompt(request.originalNlPrompt());
-        return repository.saveAndFlush(q);
+        return syncAfterEdit(repository.saveAndFlush(q), before);
     }
 
-    /** Single partial-update path (PATCH); only non-null fields change. Future hooks attach here. */
+    /** Single partial-update path (PATCH); only non-null fields change. Re-indexes on indexed-field change. */
     @Transactional
     public SavedQuery patch(Long id, PatchSavedQueryRequest request) {
         SavedQuery q = lockedForEdit(id, request.version());
+        List<Object> before = indexedFields(q);
         if (request.title() != null) q.setTitle(request.title());
         if (request.description() != null) q.setDescription(request.description());
-        if (request.sqlContent() != null) q.setSqlContent(request.sqlContent());
+        if (request.sqlContent() != null) setSqlAndValidate(q, request.sqlContent());
         if (request.tags() != null) q.setTags(request.tags());
         if (request.notes() != null) q.setNotes(request.notes());
         if (request.dialect() != null) {
@@ -77,7 +127,7 @@ public class SavedQueryService {
         }
         if (request.isLlmGenerated() != null) q.setLlmGenerated(request.isLlmGenerated());
         if (request.originalNlPrompt() != null) q.setOriginalNlPrompt(request.originalNlPrompt());
-        return repository.saveAndFlush(q);
+        return syncAfterEdit(repository.saveAndFlush(q), before);
     }
 
     /** Records one copy of the query (FR8). Unknown or deleted -> 404. */
@@ -89,16 +139,17 @@ public class SavedQueryService {
         }
     }
 
-    /** Single soft-delete path (FR6); future syncIndex hook attaches here. Already-deleted or unknown -> 404. */
+    /** Single soft-delete path (FR6); then syncIndex. Already-deleted or unknown -> 404. */
     @Transactional
     public void delete(Long id) {
         SavedQuery q = get(id);
         q.markDeleted(OffsetDateTime.now());
-        repository.saveAndFlush(q);
+        // 204 has no body: a removal failure is only logged; Reconciliation removes the orphan point.
+        indexer.syncIndex(repository.saveAndFlush(q));
     }
 
     /**
-     * Single deprecate path (FR7); future syncIndex hook attaches here. Idempotent: re-deprecating updates
+     * Single deprecate path (FR7); then syncIndex. Idempotent: re-deprecating updates
      * reason and replaced_by. replaced_by must be another live query, else 400 on {@code replaced_by}.
      */
     @Transactional
@@ -114,10 +165,12 @@ public class SavedQueryService {
             }
         }
         q.markDeprecated(request.reason(), replacement, OffsetDateTime.now());
-        return repository.saveAndFlush(q);
+        SavedQuery saved = repository.saveAndFlush(q);
+        indexer.syncIndex(saved);
+        return saved;
     }
 
-    /** Single restore path (FR7); future syncIndex hook attaches here. Not deprecated -> returned unchanged. */
+    /** Single restore path (FR7); then syncIndex. Not deprecated -> returned unchanged. */
     @Transactional
     public SavedQuery restore(Long id) {
         SavedQuery q = get(id);
@@ -125,7 +178,9 @@ public class SavedQueryService {
             return q;
         }
         q.clearDeprecation();
-        return repository.saveAndFlush(q);
+        SavedQuery saved = repository.saveAndFlush(q);
+        indexer.syncIndex(saved);
+        return saved;
     }
 
     private static ApiException invalidReplacement(String message) {

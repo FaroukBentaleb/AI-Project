@@ -17,7 +17,7 @@ public abstract class AbstractIntegrationTest {
     /** Pinned (compose uses latest for dev convenience; tests must be reproducible). */
     public static final String QDRANT_IMAGE = "qdrant/qdrant:v1.13.2";
 
-    protected static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(POSTGRES_IMAGE);
+    public static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(POSTGRES_IMAGE);
     protected static final QdrantContainer QDRANT = new QdrantContainer(QDRANT_IMAGE);
 
     static {
@@ -33,5 +33,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("qdrant.host", QDRANT::getHost);
         registry.add("qdrant.port", () -> QDRANT.getMappedPort(6334));
         registry.add("qdrant.rest-port", () -> QDRANT.getMappedPort(6333));
+        // Story 5.3: indexing embeds through a local stub, never the real Hugging Face API.
+        registry.add("hf.api-token", () -> "test-token");
+        registry.add("hf.embedding-model", () -> "test/stub-model");
+        registry.add("hf.embedding-base-url", StubEmbeddingServer::baseUrl);
     }
 }

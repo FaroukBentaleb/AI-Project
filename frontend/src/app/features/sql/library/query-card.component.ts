@@ -1,6 +1,7 @@
 import { Component, ElementRef, Input, computed, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SavedQuery } from '../core/models';
+import { NOT_READ_ONLY_COPY_NOTICE } from '../core/read-only';
 import { CopyButtonComponent } from '../shared/copy-button.component';
 import { relativeTime } from './relative-time';
 
@@ -47,6 +48,9 @@ export const PREVIEW_LINES = 6;
         @if (q.deprecated) {
           <span class="badge badge-deprecated">Deprecated</span>
         }
+        @if (q.read_only === false) {
+          <span class="badge badge-not-read-only">Not read-only</span>
+        }
         <span class="badge badge-usage">{{ usage() }}</span>
       </div>
       <div class="code" [class.clipped]="clipped()">
@@ -56,6 +60,11 @@ export const PREVIEW_LINES = 6;
           <a class="btn btn-sm btn-secondary show-all" [routerLink]="['/sql/queries', q.id]">Show all ({{ lineCount() }} lines)</a>
         }
       </div>
+      @if (copyNotice()) {
+        <div class="banner banner-warning copy-notice" role="status">
+          <span class="banner-glyph" aria-hidden="true">!</span><span>{{ notice }}</span>
+        </div>
+      }
     </article>
   `,
   styleUrls: ['../shell/sql-theme.css', './query-card.component.css']
@@ -66,6 +75,9 @@ export class QueryCardComponent {
     this.query.set(q);
   }
 
+  readonly notice = NOT_READ_ONLY_COPY_NOTICE;
+  /** FR28: shown under the card after copying a not-read-only query. */
+  readonly copyNotice = signal(false);
   readonly initial = computed(() => (this.query().author || '?').charAt(0).toUpperCase());
   readonly updated = computed(() => relativeTime(this.query().updated_at));
   private readonly lines = computed(() => (this.query().sql_content ?? '').replace(/\s+$/, '').split('\n'));
@@ -87,6 +99,7 @@ export class QueryCardComponent {
 
   /** Optimistic use count (EXPERIENCE.md): stays bumped even if the usage call fails. */
   onCopied(): void {
+    this.copyNotice.set(this.query().read_only === false);
     this.query.update((q) => ({ ...q, use_count: (q.use_count ?? 0) + 1, last_used_at: new Date().toISOString() }));
   }
 

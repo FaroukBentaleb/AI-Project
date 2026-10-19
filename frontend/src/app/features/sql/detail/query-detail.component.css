@@ -21,3 +21,5 @@
 .skeleton-main .code { height: 200px; }
 .skeleton-aside { min-height: 200px; }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.not-read-only-banner { align-items: flex-start; margin-bottom: 12px; color: var(--sql-text-primary); }
+.copy-notice { margin-bottom: 12px; }

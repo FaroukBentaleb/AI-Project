@@ -119,7 +119,7 @@ describe('LibraryComponent', () => {
     expect(url()).toBe('/sql/library?llm=true');
     expect(params(pending()).get('llm_generated')).toBe('true');
 
-    const show = el(h).querySelectorAll<HTMLButtonElement>('[role="radio"]')[1];
+    const show = el(h).querySelectorAll<HTMLButtonElement>('[aria-label="Deprecated"] [role="radio"]')[1];
     show.click();
     await h.fixture.whenStable();
     expect(url()).toBe('/sql/library?llm=true&deprecated=show');
@@ -151,10 +151,32 @@ describe('LibraryComponent', () => {
   it('moves the Deprecated segmented control with arrow keys', async () => {
     const h = await open();
     await flush(h, page([savedQuery()]));
-    el(h).querySelector('[role="radiogroup"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }));
+    el(h).querySelector('[aria-label="Deprecated"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }));
     await h.fixture.whenStable();
     expect(url()).toBe('/sql/library?deprecated=show');
     pending();
+  });
+
+  it('filters by Read-only (Any · Yes · No), with arrow keys and from the URL', async () => {
+    const h = await open('/sql/library?ro=no');
+    const first = pending();
+    expect(params(first).get('read_only')).toBe('false');
+    first.flush(page([savedQuery()]));
+    h.detectChanges();
+    const group = el(h).querySelector('[aria-label="Read-only"]')!;
+    expect(Array.from(group.querySelectorAll('[role="radio"]')).map((b) => b.textContent!.trim())).toEqual(['Any', 'Yes', 'No']);
+    expect(group.querySelector('[aria-checked="true"]')!.textContent!.trim()).toBe('No');
+    expect(el(h).querySelector('.clear')).not.toBeNull();
+
+    group.querySelectorAll<HTMLButtonElement>('[role="radio"]')[1].click();
+    await h.fixture.whenStable();
+    expect(url()).toBe('/sql/library?ro=yes');
+    expect(params(pending()).get('read_only')).toBe('true');
+
+    group.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true }));
+    await h.fixture.whenStable();
+    expect(url()).toBe('/sql/library');
+    expect(params(pending()).has('read_only')).toBeFalse();
   });
 
   it('shows the no-results state with Clear filters and Generate "<q>"', async () => {

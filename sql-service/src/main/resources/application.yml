@@ -17,6 +17,33 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
 hf.api-token: ${HF_API_TOKEN:}
-hf.model: ${HF_MODEL:}
-hf.timeout: ${HF_TIMEOUT:10s}
-hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
+# Story 6.1: generation model (sqlcoder completion format; a blank HF_MODEL also falls back to this default).
+hf.model: ${HF_MODEL:defog/sqlcoder-7b-2}
+hf.timeout: ${HF_TIMEOUT:5s}
+# One transport attempt: the LLM client never retries (FR-17).
+hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:1}
+# HF Inference Providers text-generation; the client appends /{org}/{name}.
+hf.base-url: ${HF_BASE_URL:https://router.huggingface.co/hf-inference/models}
+hf.max-new-tokens: ${HF_MAX_NEW_TOKENS:400}
+hf.embedding-model: ${HF_EMBEDDING_MODEL:}
+# OQ-1/OQ-3 open: must match the embedding model; 384 = MiniLM-class, same as commit-service.
+hf.embedding-dimension: ${HF_EMBEDDING_DIMENSION:384}
+hf.embedding-timeout: ${HF_EMBEDDING_TIMEOUT:2s}
+# HF Inference Providers (serverless); the client appends /{model}/pipeline/feature-extraction.
+hf.embedding-base-url: ${HF_EMBEDDING_BASE_URL:https://router.huggingface.co/hf-inference/models}
+qdrant:
+  host: ${QDRANT_HOST:localhost}
+  port: ${QDRANT_PORT:6334}
+  rest-port: ${QDRANT_REST_PORT:6333}
+  timeout: 1s
+  collection: sql_embeddings
+  bootstrap-retry: ${QDRANT_BOOTSTRAP_RETRY:PT30S}  # ISO-8601: read by @Scheduled
+management.endpoint.health.group.dependencies:
+  include: qdrant
+  show-details: always
+# Story 5.4: rows / point ids handled per Reconciliation batch.
+sql.reconcile.batch-size: ${SQL_RECONCILE_BATCH_SIZE:100}
+# Story 5.5 (FR-26): load the Seed Corpus (seed/seed-queries.json) at startup; idempotent by seed_key.
+sql.seed.enabled: ${SQL_SEED_ENABLED:true}
+# Story 6.1 (FR-20): prompt templates under classpath:prompts/<version>/.
+sql.prompt.version: ${SQL_PROMPT_VERSION:v1}

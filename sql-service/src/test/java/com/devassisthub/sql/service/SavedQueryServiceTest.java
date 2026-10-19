@@ -19,7 +19,7 @@ import org.springframework.http.HttpStatus;
 class SavedQueryServiceTest {
 
     SavedQueryRepository repository = mock(SavedQueryRepository.class);
-    SavedQueryService service = new SavedQueryService(repository);
+    SavedQueryService service = new SavedQueryService(repository, new com.devassisthub.sql.validation.ReadOnlyValidator(), org.mockito.Mockito.mock(com.devassisthub.sql.rag.QueryIndexer.class));
 
     @BeforeEach
     void echoSave() {

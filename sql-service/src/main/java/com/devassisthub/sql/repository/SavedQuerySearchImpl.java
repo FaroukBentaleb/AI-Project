@@ -51,6 +51,10 @@ class SavedQuerySearchImpl implements SavedQuerySearch {
             where.add("is_llm_generated = :llm");
             params.put("llm", filter.llmGenerated());
         }
+        if (filter.readOnly() != null) {
+            where.add("read_only = :readOnly");
+            params.put("readOnly", filter.readOnly());
+        }
         if (filter.deprecated() != null) {
             where.add("deprecated = :deprecated");
             params.put("deprecated", filter.deprecated());

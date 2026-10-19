@@ -67,6 +67,21 @@ module business logic is to be implemented by the team.
 | SQL queries | `sql-service` | 8084 | TBD | Natural language → read-only validated SQL |
 | Code reviews | `review-service` | 8085 | TBD | Code → smells and vulnerabilities with explanations |
 
+## SQL validation safety
+
+`sql-service` exposes `POST /api/sql/validate`, which parses SQL (it never
+executes it) and reports whether it is a single read-only SELECT. Every result
+carries this Safety Note:
+
+> This check verifies only that the SQL is a single read-only SELECT structure.
+> It does not verify that the SQL is correct, fast, or safe on your schema.
+> Run generated SQL as a read-only database user.
+
+The validator is a guard rail, not a security boundary. Always run generated or
+saved SQL as a database user that has only `SELECT` privileges (for example
+`GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;` with no write,
+DDL, or superuser rights), and set a `statement_timeout` for that user.
+
 ## Getting started
 
 ### Prerequisites

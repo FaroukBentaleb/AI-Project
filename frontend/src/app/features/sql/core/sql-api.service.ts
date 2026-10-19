@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Page, QueryParams, SavedQuery } from './models';
+import { Page, QueryParams, SavedQuery, ValidateResponse } from './models';
 import { SQL_API_BASE } from './sql-api.config';
 import type { CreateQueryRequest, PatchQueryRequest } from '../save/save-form';
 
@@ -47,6 +47,11 @@ export class SqlApiService {
   /** FR7: undeprecate (idempotent). */
   restoreQuery(id: number): Observable<SavedQuery> {
     return this.http.delete<SavedQuery>(`${this.baseUrl}/queries/${id}/deprecation`);
+  }
+
+  /** FR12: structural read-only check; never executes or saves. 200 for accepted and rejected. */
+  validate(sqlContent: string): Observable<ValidateResponse> {
+    return this.http.post<ValidateResponse>(`${this.baseUrl}/validate`, { sql_content: sqlContent });
   }
 
   /** FR8: one copy = one use. 204, empty body. */

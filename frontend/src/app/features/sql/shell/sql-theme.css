@@ -80,3 +80,17 @@
 .badge-read-only { color: var(--sql-success); background: #4ade8024; border-color: #4ade8066; }
 .skeleton-bar, .skeleton-form .bar { height: 14px; margin-bottom: 12px; border-radius: 4px; background: var(--sql-surface-raised); }
 .modal-error { margin: 8px 0 0; font-size: 13px; color: var(--sql-badge-danger-text); }
+/* Story 4.5: not-read-only badge, code chips, warning banner, Safety Note, reason lists. */
+.badge-not-read-only { color: var(--sql-badge-danger-text); background: #ff6b8624; border-color: #ff6b8666; }
+.code-chip { display: inline-block; padding: 1px 6px; border-radius: 4px; font: 600 12px/1.5 var(--sql-font-code); white-space: nowrap; }
+.code-chip-rejection { color: var(--sql-badge-danger-text); background: #ff6b8624; }
+.code-chip-warning { color: var(--sql-warning); background: #facc1524; }
+.banner-warning { background: #facc1514; border-color: #facc1566; color: var(--sql-text-primary); }
+.banner-warning .banner-glyph { color: var(--sql-warning); }
+.reason-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.reason-list li { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.safety-note {
+  padding: 10px 14px; border-radius: 8px; background: var(--sql-surface); border: 1px solid var(--sql-border);
+  color: var(--sql-text-muted); font-size: 13px;
+}
+.safety-note strong { color: var(--sql-text-primary); }

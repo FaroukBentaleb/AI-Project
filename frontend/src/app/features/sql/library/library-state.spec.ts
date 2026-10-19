@@ -7,9 +7,9 @@ describe('library-state', () => {
   });
 
   it('round-trips through the query string', () => {
-    const s: LibraryState = { q: 'orders', tags: ['billing', 'kpi'], author: 'sami', llmOnly: true, showDeprecated: true, sort: 'most_used', page: 3 };
+    const s: LibraryState = { q: 'orders', tags: ['billing', 'kpi'], author: 'sami', llmOnly: true, showDeprecated: true, readOnly: 'no', sort: 'most_used', page: 3 };
     const qp = toQueryParams(s);
-    expect(qp).toEqual({ q: 'orders', tags: 'billing,kpi', author: 'sami', llm: 'true', deprecated: 'show', sort: 'most_used', page: 3 });
+    expect(qp).toEqual({ q: 'orders', tags: 'billing,kpi', author: 'sami', llm: 'true', deprecated: 'show', ro: 'no', sort: 'most_used', page: 3 });
     expect(parseState(convertToParamMap(qp))).toEqual(s);
   });
 
@@ -27,7 +27,7 @@ describe('library-state', () => {
 
   it('maps to API params: 0-based page, size 20, newest first, deprecated hidden by default', () => {
     expect(toApiParams(DEFAULT_STATE)).toEqual({
-      page: 0, size: 20, sort: 'created_at,desc', q: '', tags: null, author: '', llm_generated: null, deprecated: false
+      page: 0, size: 20, sort: 'created_at,desc', q: '', tags: null, author: '', llm_generated: null, deprecated: false, read_only: null
     });
   });
 
@@ -44,6 +44,14 @@ describe('library-state', () => {
     expect(hasFilters({ ...DEFAULT_STATE, sort: 'title', page: 4 })).toBeFalse();
     expect(hasFilters({ ...DEFAULT_STATE, showDeprecated: true })).toBeTrue();
     expect(hasFilters({ ...DEFAULT_STATE, author: 'x' })).toBeTrue();
+  });
+
+  it('maps the Read-only filter: Any omits it, Yes/No send read_only, it counts as a filter', () => {
+    expect(toApiParams({ ...DEFAULT_STATE, readOnly: 'yes' })['read_only']).toBeTrue();
+    expect(toApiParams({ ...DEFAULT_STATE, readOnly: 'no' })['read_only']).toBeFalse();
+    expect(toQueryParams({ ...DEFAULT_STATE, readOnly: 'yes' })['ro']).toBe('yes');
+    expect(parseState(convertToParamMap({ ro: 'maybe' })).readOnly).toBe('any');
+    expect(hasFilters({ ...DEFAULT_STATE, readOnly: 'no' })).toBeTrue();
   });
 
   it('normalizes tags', () => {

@@ -19,7 +19,27 @@ export interface SavedQuery {
   use_count: number;
   last_used_at: string | null;
   version: number;
+  /** Story 4.4: null only before the startup backfill ran. */
+  read_only?: boolean | null;
+  /** `"CODE: reason"` strings; empty when read-only. */
+  read_only_reasons?: string[];
+  /** Epic 5 indexing status, honoured when present. */
+  indexed?: boolean;
   warnings: string[];
+}
+
+export interface Rejection {
+  code: string;
+  reason: string;
+}
+
+/** `POST /api/sql/validate` response (addendum §B). */
+export interface ValidateResponse {
+  accepted: boolean;
+  normalized_sql: string;
+  rejections: Rejection[];
+  warnings: string[];
+  safety_note: string;
 }
 
 export interface Page<T> {

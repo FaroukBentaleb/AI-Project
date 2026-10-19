@@ -135,14 +135,12 @@ export type ToastKind = 'success' | 'warning';
 
 /**
  * Post-mutation toast rule (EXPERIENCE.md): warnings[] first, then not-read-only/deprecated, then indexed.
- * The API has no `read_only` yet (Epic 4); it is honoured when present.
  */
 export function mutationToast(saved: SavedQuery, verb = 'Saved'): { kind: ToastKind; text: string } {
   if (saved.warnings?.length) {
     return { kind: 'warning', text: `${verb} · not yet indexed (team examples unavailable)` };
   }
-  const readOnly = (saved as SavedQuery & { read_only?: boolean }).read_only;
-  if (readOnly === false || saved.deprecated) {
+  if (saved.read_only === false || saved.deprecated) {
     return { kind: 'success', text: verb };
   }
   return { kind: 'success', text: `${verb} · added to team examples` };

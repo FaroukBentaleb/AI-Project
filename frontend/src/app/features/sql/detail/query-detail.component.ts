@@ -4,6 +4,7 @@ import { ERROR_MESSAGES, UiError, toUiError } from '../core/error-mapper';
 import { InAppHistory } from '../core/in-app-history.service';
 import { SavedQuery } from '../core/models';
 import { SqlApiService } from '../core/sql-api.service';
+import { NOT_READ_ONLY_COPY_NOTICE, parseReason } from '../core/read-only';
 import { relativeTime } from '../library/relative-time';
 import { mutationToast } from '../save/save-form';
 import { CopyButtonComponent } from '../shared/copy-button.component';
@@ -13,7 +14,6 @@ import { DeprecateErrors, DeprecateModalComponent, DeprecateSubmit } from './dep
 import { QueryRef } from './replaced-by-picker.component';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
-type Extras = SavedQuery & { read_only?: boolean; indexed?: boolean };
 
 export const DEPRECATED_TOAST = 'Deprecated · removed from team examples';
 export const ALREADY_DELETED_TOAST = 'Already deleted';
@@ -61,6 +61,7 @@ export const ALREADY_DELETED_TOAST = 'Already deleted';
                   @if (q.is_llm_generated) { <span class="badge badge-llm">LLM-generated</span> }
                   @if (q.deprecated) { <span class="badge badge-deprecated">Deprecated</span> }
                   @if (readOnly() === true) { <span class="badge badge-read-only">Read-only ✓</span> }
+                  @if (readOnly() === false) { <span class="badge badge-not-read-only">Not read-only</span> }
                   <span class="badge badge-usage">{{ usage() }}</span>
                 </div>
 
@@ -74,6 +75,19 @@ export const ALREADY_DELETED_TOAST = 'Already deleted';
                       }
                       reason: {{ q.deprecated_reason }}
                     </span>
+                  </div>
+                }
+                @if (readOnly() === false) {
+                  <div class="banner banner-danger not-read-only-banner" role="note">
+                    <span class="banner-glyph" aria-hidden="true">✕</span>
+                    <div>
+                      <span>Not read-only. Validation reasons:</span>
+                      <ul class="reason-list">
+                        @for (r of reasons(); track $index) {
+                          <li>@if (r.code) { <span class="code-chip code-chip-rejection">{{ r.code }}</span> }<span>{{ r.reason }}</span></li>
+                        }
+                      </ul>
+                    </div>
                   </div>
                 }
                 @if (actionError(); as msg) {
@@ -91,6 +105,12 @@ export const ALREADY_DELETED_TOAST = 'Already deleted';
                   </button>
                   <button #deleteBtn type="button" class="btn btn-ghost-danger delete-btn" (click)="openDelete()">Delete</button>
                 </div>
+
+                @if (copyNotice()) {
+                  <div class="banner banner-warning copy-notice" role="status">
+                    <span class="banner-glyph" aria-hidden="true">!</span><span>{{ notice }}</span>
+                  </div>
+                }
 
                 <div class="code-wrap">
                   <pre class="gutter" aria-hidden="true">{{ lineNumbers() }}</pre>
@@ -171,8 +191,11 @@ export class QueryDetailComponent {
   readonly deprecateErrors = signal<DeprecateErrors>({});
   readonly deleteError = signal<string | null>(null);
 
+  readonly notice = NOT_READ_ONLY_COPY_NOTICE;
+  readonly copyNotice = signal(false);
+  readonly reasons = computed(() => (this.query()?.read_only_reasons ?? []).map(parseReason));
   readonly libraryUrl = signal(this.router.parseUrl(this.history.lastLibraryUrl()));
-  readonly readOnly = computed(() => (this.query() as Extras | null)?.read_only);
+  readonly readOnly = computed(() => this.query()?.read_only ?? undefined);
   readonly created = computed(() => relativeTime(this.query()?.created_at) || this.query()?.created_at || '');
   readonly updated = computed(() => relativeTime(this.query()?.updated_at) || this.query()?.updated_at || '');
   readonly lineNumbers = computed(() => {
@@ -188,7 +211,7 @@ export class QueryDetailComponent {
     return last ? `Used ${q.use_count}× · last ${last}` : `Used ${q.use_count}×`;
   });
   readonly teamStatus = computed(() => {
-    const q = this.query() as Extras | null;
+    const q = this.query();
     if (!q || q.deprecated || q.read_only === false) {
       return 'Not used as a team example';
     }
@@ -215,6 +238,7 @@ export class QueryDetailComponent {
   load(): void {
     this.state.set('loading');
     this.query.set(null);
+    this.copyNotice.set(false);
     this.replacement.set(null);
     this.actionError.set(null);
     this.libraryUrl.set(this.router.parseUrl(this.history.lastLibraryUrl()));
@@ -244,6 +268,7 @@ export class QueryDetailComponent {
 
   /** Optimistic use count (as on the card). */
   onCopied(): void {
+    this.copyNotice.set(this.query()?.read_only === false);
     this.query.update((q) => (q ? { ...q, use_count: (q.use_count ?? 0) + 1, last_used_at: new Date().toISOString() } : q));
   }
 

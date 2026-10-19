@@ -23,3 +23,4 @@
   background: linear-gradient(transparent, var(--sql-code-bg)); pointer-events: none;
 }
 .show-all { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); }
+.copy-notice { margin-top: 10px; font-size: 13px; }

@@ -5,6 +5,7 @@ import { ERROR_MESSAGES, toUiError } from '../core/error-mapper';
 import { InAppHistory } from '../core/in-app-history.service';
 import { SavedQuery } from '../core/models';
 import { SqlApiService } from '../core/sql-api.service';
+import { SqlSessionState } from '../core/session-state.service';
 import { DiscardModalComponent } from '../shared/discard-modal.component';
 import { TagsInputComponent } from '../shared/tags-input.component';
 import { ToastService } from '../shared/toast.service';
@@ -252,6 +253,13 @@ export class SaveQueryComponent {
   constructor() {
     if (this.isEdit) {
       this.load();
+    } else {
+      // Save from Validate (EXPERIENCE.md prefill 2): the normalized SQL, handed over via session state.
+      const from = this.route.snapshot.queryParamMap.get('from');
+      const pending = inject(SqlSessionState, { optional: true })?.takePrefill(from);
+      if (pending) {
+        this.prefill(pending);
+      }
     }
   }
 

@@ -51,7 +51,7 @@ public class SavedQueryController {
         }
         SavedQuery saved = service.create(request, author);
         return ResponseEntity.created(URI.create("/api/sql/queries/" + saved.getId()))
-                .body(SavedQueryResponse.from(saved, List.of()));
+                .body(SavedQueryResponse.fromMutation(saved));
     }
 
     @GetMapping("/{id}")
@@ -61,12 +61,12 @@ public class SavedQueryController {
 
     @PutMapping("/{id}")
     public SavedQueryResponse replace(@PathVariable("id") Long id, @Valid @RequestBody ReplaceSavedQueryRequest request) {
-        return SavedQueryResponse.from(service.replace(id, request), List.of());
+        return SavedQueryResponse.fromMutation(service.replace(id, request));
     }
 
     @PatchMapping("/{id}")
     public SavedQueryResponse patch(@PathVariable("id") Long id, @Valid @RequestBody PatchSavedQueryRequest request) {
-        return SavedQueryResponse.from(service.patch(id, request), List.of());
+        return SavedQueryResponse.fromMutation(service.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -84,12 +84,12 @@ public class SavedQueryController {
     @PutMapping("/{id}/deprecation")
     public SavedQueryResponse deprecate(@PathVariable("id") Long id,
                                         @Valid @RequestBody DeprecateSavedQueryRequest request) {
-        return SavedQueryResponse.from(service.deprecate(id, request), List.of());
+        return SavedQueryResponse.fromMutation(service.deprecate(id, request));
     }
 
     @DeleteMapping("/{id}/deprecation")
     public SavedQueryResponse restore(@PathVariable("id") Long id) {
-        return SavedQueryResponse.from(service.restore(id), List.of());
+        return SavedQueryResponse.fromMutation(service.restore(id));
     }
 
     @GetMapping
@@ -100,8 +100,9 @@ public class SavedQueryController {
                                                  @RequestParam(name = "tags", required = false) String tags,
                                                  @RequestParam(name = "author", required = false) String author,
                                                  @RequestParam(name = "llm_generated", required = false) String llmGenerated,
+                                                 @RequestParam(name = "read_only", required = false) String readOnly,
                                                  @RequestParam(name = "deprecated", required = false) String deprecated) {
-        LibraryFilter filter = LibraryFilter.of(q, tags, author, llmGenerated, deprecated);
+        LibraryFilter filter = LibraryFilter.of(q, tags, author, llmGenerated, readOnly, deprecated);
         return PageResponse.from(service.list(filter, LibraryPaging.of(page, size, sort)),
                 sq -> SavedQueryResponse.from(sq, List.of()));
     }

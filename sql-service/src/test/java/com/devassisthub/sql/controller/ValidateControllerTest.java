@@ -138,11 +138,11 @@ class ValidateControllerTest {
     void responseHasExactlyTheAddendumShape() throws Exception {
         String body = validate("SELECT 1").andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        Map<?, ?> map = json.readValue(body, Map.class);
+        Map<String, Object> map = json.readValue(body, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
         assertThat(map.keySet())
                 .containsExactlyInAnyOrder("accepted", "normalized_sql", "rejections", "warnings", "safety_note");
         String rejected = validate("SELECT 1; DROP TABLE orders").andReturn().getResponse().getContentAsString();
-        Map<?, ?> first = (Map<?, ?>) ((List<?>) json.readValue(rejected, Map.class).get("rejections")).get(0);
+        @SuppressWarnings("unchecked") Map<String, Object> first = (Map<String, Object>) ((List<?>) json.readValue(rejected, Map.class).get("rejections")).get(0);
         assertThat(first.keySet()).containsExactlyInAnyOrder("code", "reason");
         assertThat(first.get("code")).isEqualTo("MULTIPLE_STATEMENTS");
     }

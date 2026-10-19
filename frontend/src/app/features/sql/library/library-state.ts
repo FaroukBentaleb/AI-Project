@@ -3,6 +3,8 @@ import { QueryParams } from '../core/models';
 
 export const PAGE_SIZE = 20;
 
+export type ReadOnlyFilter = 'any' | 'yes' | 'no';
+
 export type LibrarySort = 'newest' | 'most_used' | 'recently_used' | 'title';
 
 /** UI sort option -> API `sort` value (EXPERIENCE.md Select (sort)). */
@@ -20,6 +22,8 @@ export interface LibraryState {
   author: string;
   llmOnly: boolean;
   showDeprecated: boolean;
+  /** Read-only filter (FR-4): Any · Yes · No. */
+  readOnly: ReadOnlyFilter;
   sort: LibrarySort;
   /** 1-based, as shown to the user. */
   page: number;
@@ -31,6 +35,7 @@ export const DEFAULT_STATE: LibraryState = {
   author: '',
   llmOnly: false,
   showDeprecated: false,
+  readOnly: 'any',
   sort: 'newest',
   page: 1
 };
@@ -45,6 +50,7 @@ export function parseState(params: ParamMap): LibraryState {
     author: (params.get('author') ?? '').trim(),
     llmOnly: params.get('llm') === 'true',
     showDeprecated: params.get('deprecated') === 'show',
+    readOnly: params.get('ro') === 'yes' || params.get('ro') === 'no' ? (params.get('ro') as ReadOnlyFilter) : 'any',
     sort: SORT_OPTIONS.some((o) => o.value === sort) ? (sort as LibrarySort) : 'newest',
     page: Number.isInteger(page) && page >= 1 ? page : 1
   };
@@ -58,6 +64,7 @@ export function toQueryParams(s: LibraryState): Params {
     author: s.author || null,
     llm: s.llmOnly ? 'true' : null,
     deprecated: s.showDeprecated ? 'show' : null,
+    ro: s.readOnly === 'any' ? null : s.readOnly,
     sort: s.sort === 'newest' ? null : s.sort,
     page: s.page > 1 ? s.page : null
   };
@@ -73,13 +80,14 @@ export function toApiParams(s: LibraryState): QueryParams {
     tags: s.tags.length ? s.tags.join(',') : null,
     author: s.author,
     llm_generated: s.llmOnly ? true : null,
-    deprecated: s.showDeprecated ? null : false
+    deprecated: s.showDeprecated ? null : false,
+    read_only: s.readOnly === 'any' ? null : s.readOnly === 'yes'
   };
 }
 
 /** True when any narrowing filter or search is set (Deprecated: Hide is the default, not a filter). */
 export function hasFilters(s: LibraryState): boolean {
-  return !!s.q || s.tags.length > 0 || !!s.author || s.llmOnly || s.showDeprecated;
+  return !!s.q || s.tags.length > 0 || !!s.author || s.llmOnly || s.showDeprecated || s.readOnly !== 'any';
 }
 
 /** Trim, lowercase, drop empties and duplicates. */

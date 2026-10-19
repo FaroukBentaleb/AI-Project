@@ -11,18 +11,19 @@ import org.springframework.http.HttpStatus;
  * Validated search/filter parameters for the library list (FR-4). Null members mean "no filter".
  * All present filters combine with AND.
  */
-public record LibraryFilter(String q, List<String> tags, String author, Boolean llmGenerated, Boolean deprecated) {
+public record LibraryFilter(String q, List<String> tags, String author, Boolean llmGenerated, Boolean readOnly,
+                            Boolean deprecated) {
 
     public static final int MAX_Q_LENGTH = 200;
     public static final int MAX_TAGS = 10;
     public static final int MAX_TAG_LENGTH = 50;
     public static final int MAX_AUTHOR_LENGTH = 100;
 
-    public static final LibraryFilter NONE = new LibraryFilter(null, null, null, null, null);
+    public static final LibraryFilter NONE = new LibraryFilter(null, null, null, null, null, null);
 
     /** Parses raw request params; blank values mean "no filter"; invalid values throw 400 VALIDATION_FAILED. */
     public static LibraryFilter of(String q, String tags, String author, String llmGenerated,
-                                   String deprecated) {
+                                   String readOnly, String deprecated) {
         String query = blankToNull(q);
         if (query != null && query.length() > MAX_Q_LENGTH) {
             throw invalid("q", "q: must be at most " + MAX_Q_LENGTH + " characters");
@@ -45,7 +46,7 @@ public record LibraryFilter(String q, List<String> tags, String author, Boolean 
             throw invalid("author", "author: must be at most " + MAX_AUTHOR_LENGTH + " characters");
         }
         return new LibraryFilter(query, tagList, a, parseBoolean("llm_generated", llmGenerated),
-                parseBoolean("deprecated", deprecated));
+                parseBoolean("read_only", readOnly),                 parseBoolean("deprecated", deprecated));
     }
 
     /** Escapes LIKE wildcards with backslash so user text matches literally. */

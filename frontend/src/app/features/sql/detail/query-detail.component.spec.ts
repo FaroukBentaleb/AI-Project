@@ -134,6 +134,52 @@ describe('QueryDetailComponent', () => {
     expect(q('.deprecated-banner')).toBeNull();
   });
 
+  it('shows Read-only ✓ in the badges and aside, with no danger banner, for a read-only query', () => {
+    loaded({ read_only: true, read_only_reasons: [] });
+    expect(q('.badge-read-only')!.textContent).toContain('Read-only ✓');
+    expect(q('.badge-not-read-only')).toBeNull();
+    expect(q('.not-read-only-banner')).toBeNull();
+    expect(q('.aside')!.textContent).toContain('Read-only ✓');
+  });
+
+  it('lists the validation reasons with code chips for a not-read-only query', () => {
+    loaded({
+      read_only: false,
+      read_only_reasons: ['NON_SELECT_STATEMENT: UPDATE is not a SELECT', 'DATA_MODIFYING_CTE: CTE "x" contains an INSERT', 'legacy reason']
+    });
+    expect(q('.badge-not-read-only')!.textContent).toContain('Not read-only');
+    const banner = q('.not-read-only-banner')!;
+    expect(banner.textContent).toContain('Not read-only. Validation reasons:');
+    const items = Array.from(banner.querySelectorAll('li'));
+    expect(items.length).toBe(3);
+    expect(items[0].querySelector('.code-chip')!.textContent).toBe('NON_SELECT_STATEMENT');
+    expect(items[0].textContent).toContain('UPDATE is not a SELECT');
+    expect(items[1].querySelector('.code-chip')!.textContent).toBe('DATA_MODIFYING_CTE');
+    expect(items[2].querySelector('.code-chip')).toBeNull();
+    expect(items[2].textContent).toContain('legacy reason');
+    expect(q('.aside')!.textContent).toContain('Not read-only');
+    expect(q('.team')!.textContent).toContain('Not used as a team example');
+  });
+
+  it('still allows copying a not-read-only query and shows the notice', async () => {
+    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    loaded({ read_only: false, read_only_reasons: ['NON_SELECT_STATEMENT: x'] });
+    expect(q('.copy-notice')).toBeNull();
+    q<HTMLButtonElement>('sql-copy-button button')!.click();
+    await settle();
+    expect(q('.copy-notice')!.textContent).toContain('Copied. This query is not read-only — it modifies data.');
+    backend.expectOne(`${one()}/usage`).flush(null);
+  });
+
+  it('shows no copy notice for a read-only query', async () => {
+    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    loaded({ read_only: true });
+    q<HTMLButtonElement>('sql-copy-button button')!.click();
+    await settle();
+    expect(q('.copy-notice')).toBeNull();
+    backend.expectOne(`${one()}/usage`).flush(null);
+  });
+
   it('says "Written by hand" for a manual query', () => {
     loaded({ is_llm_generated: false, original_nl_prompt: null });
     expect(q('.origin')!.textContent).toContain('Written by hand');

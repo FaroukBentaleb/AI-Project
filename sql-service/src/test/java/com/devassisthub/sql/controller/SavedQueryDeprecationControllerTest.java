@@ -138,7 +138,7 @@ class SavedQueryDeprecationControllerTest {
     void deprecatedFilterIsParsedAndPassed() throws Exception {
         when(service.list(any(), any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(1), 0));
         mvc.perform(get("/api/sql/queries").param("deprecated", "FALSE")).andExpect(status().isOk());
-        verify(service).list(eq(new LibraryFilter(null, null, null, null, false)), any());
+        verify(service).list(eq(new LibraryFilter(null, null, null, null, null, false)), any());
     }
 
     @Test

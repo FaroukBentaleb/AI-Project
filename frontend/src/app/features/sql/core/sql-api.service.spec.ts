@@ -83,6 +83,16 @@ describe('SqlApiService', () => {
     expect(done).toBeTrue();
   });
 
+  it('validates with a POST of sql_content', () => {
+    let accepted: boolean | undefined;
+    api.validate('SELECT 1').subscribe((r) => (accepted = r.accepted));
+    const req = backend.expectOne(`${api.baseUrl}/validate`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ sql_content: 'SELECT 1' });
+    req.flush({ accepted: true, normalized_sql: 'SELECT 1', rejections: [], warnings: [], safety_note: 'n' });
+    expect(accepted).toBeTrue();
+  });
+
   it('drops null and undefined params', () => {
     expect(toHttpParams({ a: null, b: undefined, c: false }).keys()).toEqual(['c']);
   });

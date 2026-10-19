@@ -24,6 +24,9 @@ public record SavedQueryResponse(
         String deprecatedReason,
         OffsetDateTime deprecatedAt,
         Long replacedBy,
+        Boolean readOnly,
+        List<String> readOnlyReasons,
+        boolean indexed,
         long useCount,
         OffsetDateTime lastUsedAt,
         Integer version,
@@ -33,7 +36,13 @@ public record SavedQueryResponse(
         return new SavedQueryResponse(q.getId(), q.getTitle(), q.getDescription(), q.getSqlContent(),
                 List.copyOf(q.getTags()), q.getDialect(), q.getNotes(), q.getAuthor(), q.getCreatedAt(),
                 q.getUpdatedAt(), q.isLlmGenerated(), q.getOriginalNlPrompt(), q.isDeprecated(),
-                q.getDeprecatedReason(), q.getDeprecatedAt(), q.getReplacedBy(), q.getUseCount(), q.getLastUsedAt(), q.getVersion(),
+                q.getDeprecatedReason(), q.getDeprecatedAt(), q.getReplacedBy(),
+                q.getReadOnly(), List.copyOf(q.getReadOnlyReasons()), q.isIndexed(), q.getUseCount(), q.getLastUsedAt(), q.getVersion(),
                 warnings == null ? List.of() : List.copyOf(warnings));
+    }
+
+    /** Response for a mutation: carries the validator and indexing Warnings raised in this request (addendum §B). */
+    public static SavedQueryResponse fromMutation(SavedQuery q) {
+        return from(q, q.getValidationWarnings());
     }
 }

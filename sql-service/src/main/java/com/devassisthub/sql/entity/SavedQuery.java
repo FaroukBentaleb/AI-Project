@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -85,6 +86,30 @@ public class SavedQuery {
     @Column(name = "last_used_at", insertable = false, updatable = false)
     private OffsetDateTime lastUsedAt;
 
+    /** Read-Only Flag (V6); null only for rows saved before 4.4 and not yet backfilled. */
+    @Column(name = "read_only")
+    private Boolean readOnly;
+
+    /** "CODE: reason" per Rejection when not read-only; empty when read-only. */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "read_only_reasons", nullable = false, columnDefinition = "text[]")
+    private List<String> readOnlyReasons = new ArrayList<>();
+
+    /**
+     * Whether a RAG Index point exists (V7). Written only by {@code SavedQueryRepository.setIndexed} so that
+     * indexing never bumps {@code version} or {@code updated_at}.
+     */
+    @Column(nullable = false, insertable = false, updatable = false)
+    private boolean indexed;
+
+    /** Seed Corpus identifier (V8, Story 5.5); null for user-created queries. Set once at insert. */
+    @Column(name = "seed_key", length = 100, updatable = false)
+    private String seedKey;
+
+    /** Validator and indexing Warnings from the current request only; never persisted. */
+    @Transient
+    private List<String> validationWarnings = List.of();
+
     @Version
     @Column(nullable = false)
     private Integer version;
@@ -104,6 +129,8 @@ public class SavedQuery {
     public void setNotes(String notes) { this.notes = notes; }
     public String getAuthor() { return author; }
     public void setAuthor(String author) { this.author = author; }
+    public String getSeedKey() { return seedKey; }
+    public void setSeedKey(String seedKey) { this.seedKey = seedKey; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
     public boolean isLlmGenerated() { return llmGenerated; }
@@ -144,6 +171,28 @@ public class SavedQuery {
 
     public long getUseCount() { return useCount; }
     public OffsetDateTime getLastUsedAt() { return lastUsedAt; }
+
+    public Boolean getReadOnly() { return readOnly; }
+    public List<String> getReadOnlyReasons() { return readOnlyReasons; }
+    public List<String> getValidationWarnings() { return validationWarnings; }
+
+    /** Stores a Validation Outcome: flag, reasons, and the request-scoped Warnings. */
+    public void applyValidation(boolean readOnly, List<String> reasons, List<String> warnings) {
+        this.readOnly = readOnly;
+        this.readOnlyReasons = new ArrayList<>(reasons);
+        this.validationWarnings = List.copyOf(warnings);
+    }
+
+    /** Appends a request-scoped Warning (e.g. indexing unavailable). */
+    public void addWarning(String warning) {
+        List<String> all = new ArrayList<>(validationWarnings);
+        all.add(warning);
+        this.validationWarnings = List.copyOf(all);
+    }
+
+    public boolean isIndexed() { return indexed; }
+    /** In-memory only; persist with {@code SavedQueryRepository.setIndexed}. */
+    public void setIndexed(boolean indexed) { this.indexed = indexed; }
 
     public Integer getVersion() { return version; }
 }

@@ -104,4 +104,33 @@ describe('QueryCardComponent', () => {
     expect(showAll.textContent).toContain('Show all (9 lines)');
     expect(showAll.getAttribute('href')).toBe('/sql/queries/9');
   });
+
+  it('shows the Not read-only badge only when read_only is false', () => {
+    expect(render(savedQuery({ read_only: false })).querySelector('.badge-not-read-only')!.textContent).toContain('Not read-only');
+    expect(render(savedQuery({ read_only: true })).querySelector('.badge-not-read-only')).toBeNull();
+    expect(render(savedQuery({ read_only: null })).querySelector('.badge-not-read-only')).toBeNull();
+  });
+
+  it('shows the not-read-only notice under the card after copying a not-read-only query', fakeAsync(() => {
+    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    const el = render(savedQuery({ id: 5, read_only: false }));
+    expect(el.querySelector('.copy-notice')).toBeNull();
+    copyBtn(el).click();
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(el.querySelector('.copy-notice')!.textContent).toContain('Copied. This query is not read-only — it modifies data.');
+    backend.expectOne((r) => r.url.endsWith('/sql/queries/5/usage')).flush(null);
+    tick(2000);
+  }));
+
+  it('shows no notice after copying a read-only query', fakeAsync(() => {
+    spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    const el = render(savedQuery({ id: 6, read_only: true }));
+    copyBtn(el).click();
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(el.querySelector('.copy-notice')).toBeNull();
+    backend.expectOne((r) => r.url.endsWith('/sql/queries/6/usage')).flush(null);
+    tick(2000);
+  }));
 });

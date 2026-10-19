@@ -2,6 +2,7 @@ package com.devassisthub.sql.config;
 
 import com.devassisthub.sql.validation.FunctionPolicy;
 import com.devassisthub.sql.validation.ReadOnlyValidator;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,9 +16,10 @@ import org.springframework.context.annotation.Configuration;
 public class ValidatorConfig {
 
     @Bean
-    public FunctionPolicy functionPolicy(@Value("${sql.validator.blocked-functions:}") List<String> blocked) {
+    public FunctionPolicy functionPolicy(@Value("${sql.validator.blocked-functions:}") String blocked) {
+        // Split here rather than relying on a ConversionService, so binding is identical in every context.
         List<String> entries = blocked == null ? List.of()
-                : blocked.stream().filter(s -> s != null && !s.isBlank()).toList();
+                : Arrays.stream(blocked.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
         return entries.isEmpty() ? FunctionPolicy.defaults() : new FunctionPolicy(entries);
     }
 

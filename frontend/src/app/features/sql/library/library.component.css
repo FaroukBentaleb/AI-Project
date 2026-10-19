@@ -49,3 +49,5 @@
 }
 .page-btn.active { background: var(--sql-accent); color: var(--sql-accent-text); border-color: var(--sql-accent); }
 .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.segment + .segment { border-left: 0; }
+.segment:not(:first-of-type):not(:last-of-type) { border-radius: 0; }

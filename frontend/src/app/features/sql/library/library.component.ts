@@ -8,6 +8,7 @@ import { SqlApiService } from '../core/sql-api.service';
 import { TagsInputComponent } from '../shared/tags-input.component';
 import {
   DEFAULT_STATE,
+  ReadOnlyFilter,
   LibraryState,
   PAGE_SIZE,
   SORT_OPTIONS,
@@ -86,6 +87,19 @@ export const SEARCH_DEBOUNCE_MS = 300;
           <span class="track" aria-hidden="true"><span class="knob"></span></span>
           LLM-generated only
         </button>
+        <div class="segmented read-only-filter" role="radiogroup" aria-label="Read-only" (keydown)="onReadOnlyKeydown($event)">
+          <span class="segmented-label" aria-hidden="true">Read-only</span>
+          @for (o of readOnlyOptions; track o.value) {
+            <button
+              type="button"
+              role="radio"
+              class="segment"
+              [attr.aria-checked]="s.readOnly === o.value"
+              [attr.tabindex]="s.readOnly === o.value ? 0 : -1"
+              (click)="update({ readOnly: o.value })"
+            >{{ o.label }}</button>
+          }
+        </div>
         <div class="segmented" role="radiogroup" aria-label="Deprecated" (keydown)="onSegmentKeydown($event)">
           <span class="segmented-label" aria-hidden="true">Deprecated</span>
           <button
@@ -197,6 +211,11 @@ export class LibraryComponent {
   readonly searchInput$ = new Subject<string>();
   private readonly retry$ = new Subject<void>();
 
+  readonly readOnlyOptions: ReadonlyArray<{ value: ReadOnlyFilter; label: string }> = [
+    { value: 'any', label: 'Any' },
+    { value: 'yes', label: 'Yes' },
+    { value: 'no', label: 'No' }
+  ];
   readonly state = toSignal(this.route.queryParamMap.pipe(map(parseState)), { initialValue: DEFAULT_STATE });
 
   readonly result = toSignal(
@@ -280,6 +299,19 @@ export class LibraryComponent {
 
   retry(): void {
     this.retry$.next();
+  }
+
+  onReadOnlyKeydown(event: KeyboardEvent): void {
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (!step) {
+      return;
+    }
+    event.preventDefault();
+    const opts = this.readOnlyOptions;
+    const i = opts.findIndex((o) => o.value === this.state().readOnly);
+    this.update({ readOnly: opts[(i + step + opts.length) % opts.length].value });
+    const group = event.currentTarget as HTMLElement;
+    setTimeout(() => group.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
   }
 
   onSegmentKeydown(event: KeyboardEvent): void {

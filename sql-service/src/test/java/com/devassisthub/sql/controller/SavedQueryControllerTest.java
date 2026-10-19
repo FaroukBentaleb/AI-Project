@@ -256,12 +256,12 @@ class SavedQueryControllerTest {
     void listPassesParsedFiltersToService() throws Exception {
         when(service.list(any(), any())).thenAnswer(inv -> new PageImpl<>(List.of(), inv.getArgument(1), 0));
         mvc.perform(get("/api/sql/queries").param("q", " orders ").param("tags", "reporting, finance")
-                        .param("author", "alice").param("llm_generated", "TRUE").param("page", "1").param("size", "5"))
+                        .param("author", "alice").param("llm_generated", "TRUE").param("read_only", "false").param("page", "1").param("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.size").value(5));
         verify(service).list(eq(new com.devassisthub.sql.service.LibraryFilter(
-                "orders", List.of("reporting", "finance"), "alice", true, null)), any());
+                "orders", List.of("reporting", "finance"), "alice", true, false, null)), any());
     }
 
     @Test
@@ -273,7 +273,7 @@ class SavedQueryControllerTest {
     }
 
     @ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"llm_generated,maybe", "llm_generated,1",
+    @org.junit.jupiter.params.provider.CsvSource({"llm_generated,maybe", "llm_generated,1", "read_only,yes",
             "tags,a;b;c;d;e;f;g;h;i;j;k"})
     void listRejectsBadFiltersWith400(String name, String value) throws Exception {
         mvc.perform(get("/api/sql/queries").param(name, value.replace(';', ',')))
