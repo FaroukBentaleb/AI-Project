@@ -3,6 +3,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { IdentityService } from '../core/identity.service';
+import { InAppHistory } from '../core/in-app-history.service';
 import { IdentityModalComponent } from './identity-modal.component';
 import { ToastComponent } from '../shared/toast.component';
 
@@ -68,6 +69,8 @@ import { ToastComponent } from '../shared/toast.component';
 export class SqlShellComponent {
   readonly identity = inject(IdentityService);
   private readonly router = inject(Router);
+  /** Started here so in-app history depth is tracked from module entry. */
+  private readonly history = inject(InAppHistory, { optional: true });
 
   readonly menuOpen = signal(false);
   readonly changingName = signal(false);

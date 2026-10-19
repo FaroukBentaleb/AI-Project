@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { provideLocationMocks } from '@angular/common/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -6,6 +7,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { SqlApiService } from '../core/sql-api.service';
 import { ToastService } from '../shared/toast.service';
+import { InAppHistory } from '../core/in-app-history.service';
 import { SaveQueryComponent, confirmLeaveSaveForm } from './save-query.component';
 
 @Component({ standalone: true, template: '<p class="stub">stub</p>' })
@@ -25,10 +27,12 @@ describe('SaveQueryComponent', () => {
           { path: 'sql/queries/new', component: SaveQueryComponent, canDeactivate: [confirmLeaveSaveForm] },
           { path: 'sql/queries/:id', component: StubComponent }
         ]),
+        provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
         SqlApiService,
-        ToastService
+        ToastService,
+        InAppHistory
       ]
     });
     backend = TestBed.inject(HttpTestingController);
@@ -46,9 +50,11 @@ describe('SaveQueryComponent', () => {
   const q = <T extends HTMLElement>(sel: string) => el().querySelector<T>(sel);
   const url = () => TestBed.inject(Router).url;
   const settle = async () => {
-    h.detectChanges();
-    await h.fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    // Not whenStable(): a navigation held by the discard guard keeps the app unstable on purpose.
+    for (let i = 0; i < 3; i++) {
+      h.detectChanges();
+      await new Promise((r) => setTimeout(r));
+    }
     h.detectChanges();
   };
 
@@ -167,10 +173,12 @@ describe('SaveQueryComponent', () => {
     );
   });
 
-  it('submits with Ctrl+Enter', () => {
+  it('submits with Ctrl+Enter', async () => {
     fillRequired();
     q('form')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
     backend.expectOne(`${api.baseUrl}/queries`).flush(saved());
+    await settle();
+    expect(url()).toBe('/sql/queries/42');
   });
 
   it('shows a 400 field error inline from the server envelope and focuses it', async () => {

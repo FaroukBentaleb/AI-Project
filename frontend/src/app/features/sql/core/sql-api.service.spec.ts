@@ -29,6 +29,27 @@ describe('SqlApiService', () => {
     expect(id).toBe(7);
   });
 
+  it('patches, deletes, deprecates and restores', () => {
+    api.patchQuery(3, { title: 'x', version: 2 }).subscribe();
+    let r = backend.expectOne(`${api.baseUrl}/queries/3`);
+    expect(r.request.method).toBe('PATCH');
+    expect(r.request.body).toEqual({ title: 'x', version: 2 });
+    r.flush({});
+    api.deleteQuery(3).subscribe();
+    r = backend.expectOne(`${api.baseUrl}/queries/3`);
+    expect(r.request.method).toBe('DELETE');
+    r.flush(null, { status: 204, statusText: 'No Content' });
+    api.deprecateQuery(3, { reason: 'old', replaced_by: 4 }).subscribe();
+    r = backend.expectOne(`${api.baseUrl}/queries/3/deprecation`);
+    expect(r.request.method).toBe('PUT');
+    expect(r.request.body).toEqual({ reason: 'old', replaced_by: 4 });
+    r.flush({});
+    api.restoreQuery(3).subscribe();
+    r = backend.expectOne(`${api.baseUrl}/queries/3/deprecation`);
+    expect(r.request.method).toBe('DELETE');
+    r.flush({});
+  });
+
   it('targets the gateway SQL route', () => {
     expect(api.baseUrl).toBe(`${environment.apiBaseUrl}/sql`);
     expect(api.baseUrl.endsWith('/api/sql')).toBeTrue();

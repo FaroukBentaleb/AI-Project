@@ -147,3 +147,93 @@ export function mutationToast(saved: SavedQuery, verb = 'Saved'): { kind: ToastK
   }
   return { kind: 'success', text: `${verb} · added to team examples` };
 }
+
+/** Fields an edit can change (is_llm_generated and the original prompt are fixed at creation). */
+export const EDITABLE_FIELDS: readonly FormField[] = FORM_FIELDS;
+
+export interface PatchQueryRequest {
+  title?: string;
+  description?: string;
+  sql_content?: string;
+  tags?: string[];
+  notes?: string;
+  dialect?: string;
+  version: number;
+}
+
+export function draftFromQuery(q: SavedQuery): SaveDraft {
+  return {
+    title: q.title ?? '',
+    description: q.description ?? '',
+    sql_content: q.sql_content ?? '',
+    tags: [...(q.tags ?? [])],
+    notes: q.notes ?? '',
+    dialect: q.dialect || DEFAULT_DIALECT,
+    is_llm_generated: !!q.is_llm_generated,
+    original_nl_prompt: q.original_nl_prompt ?? null
+  };
+}
+
+export function sameField(a: SaveDraft, b: SaveDraft, f: FormField): boolean {
+  return JSON.stringify(a[f]) === JSON.stringify(b[f]);
+}
+
+/** PATCH body: only the fields that differ from `base` (null means unchanged on the API; "" clears notes). */
+export function toPatchRequest(draft: SaveDraft, base: SaveDraft, version: number): PatchQueryRequest {
+  const body: PatchQueryRequest = { version };
+  const full = toCreateRequest(draft);
+  for (const f of EDITABLE_FIELDS) {
+    if (sameField(draft, base, f)) {
+      continue;
+    }
+    if (f === 'notes') {
+      body.notes = full.notes ?? '';
+    } else if (f === 'tags') {
+      body.tags = full.tags;
+    } else {
+      (body as unknown as Record<string, unknown>)[f] = full[f];
+    }
+  }
+  return body;
+}
+
+export interface FieldMarker {
+  /** Set when someone else also changed the field: their value, as text. */
+  server: string | null;
+}
+export type FieldMarkers = Partial<Record<FormField, FieldMarker>>;
+
+export function fieldText(draft: SaveDraft, f: FormField): string {
+  const v = draft[f];
+  return Array.isArray(v) ? (v.length ? v.join(', ') : '(no tags)') : String(v ?? '');
+}
+
+/**
+ * Merge on Reload (EXPERIENCE.md Edit 409): untouched fields take the latest server values; fields the user
+ * changed keep the user's value and get a marker, flagged when the server changed them too.
+ */
+export function mergeOnReload(base: SaveDraft, mine: SaveDraft, latest: SaveDraft): { draft: SaveDraft; markers: FieldMarkers } {
+  const draft: SaveDraft = { ...latest, tags: [...latest.tags] };
+  const markers: FieldMarkers = {};
+  for (const f of EDITABLE_FIELDS) {
+    if (sameField(mine, base, f) || sameField(mine, latest, f)) {
+      continue;
+    }
+    (draft as unknown as Record<string, unknown>)[f] = f === 'tags' ? [...mine.tags] : mine[f];
+    markers[f] = { server: sameField(latest, base, f) ? null : fieldText(latest, f) };
+  }
+  return { draft, markers };
+}
+
+/** "More options" label on edit summarizes the values (EXPERIENCE.md Save form). */
+export function moreSummary(draft: SaveDraft): string {
+  const parts: string[] = [];
+  if (draft.tags.length) {
+    parts.push(`${draft.tags.length} tag${draft.tags.length === 1 ? '' : 's'}`);
+  }
+  if (draft.notes.trim()) {
+    parts.push('notes');
+  }
+  parts.push(draft.dialect === DEFAULT_DIALECT ? 'PostgreSQL' : draft.dialect);
+  return parts.join(' · ');
+}

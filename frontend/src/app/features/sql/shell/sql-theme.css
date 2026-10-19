@@ -65,3 +65,18 @@
 .empty-state .empty-actions { display: flex; justify-content: center; gap: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+/* Story 3.5: breadcrumb, neutral banner, danger buttons, read-only badge, skeleton bars. */
+.breadcrumb { display: flex; align-items: baseline; min-width: 0; margin: 0 0 8px; color: var(--sql-text-muted); font: 500 13px/1.4 var(--sql-font-ui); }
+.breadcrumb a { color: var(--sql-accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb .crumb-title { max-width: 40ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.banner-neutral { background: #94a3b814; border-color: #94a3b866; color: var(--sql-text-primary); }
+.banner-neutral .banner-glyph { color: #a5b4c8; }
+.banner-neutral a { color: var(--sql-accent); }
+.btn-danger { background: var(--sql-danger); color: #1a0208; border-color: var(--sql-danger); }
+.btn-danger:disabled { opacity: 0.6; }
+.btn-ghost-danger { background: transparent; color: var(--sql-badge-danger-text); border-color: transparent; }
+.btn-ghost-danger:hover { background: #ff6b8614; }
+.badge-read-only { color: var(--sql-success); background: #4ade8024; border-color: #4ade8066; }
+.skeleton-bar, .skeleton-form .bar { height: 14px; margin-bottom: 12px; border-radius: 4px; background: var(--sql-surface-raised); }
+.modal-error { margin: 8px 0 0; font-size: 13px; color: var(--sql-badge-danger-text); }

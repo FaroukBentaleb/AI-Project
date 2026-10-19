@@ -1,7 +1,8 @@
-import { Location } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, CanDeactivateFn, Router } from '@angular/router';
-import { toUiError } from '../core/error-mapper';
+import { ActivatedRoute, CanDeactivateFn, Router, RouterLink } from '@angular/router';
+import { ERROR_MESSAGES, toUiError } from '../core/error-mapper';
+import { InAppHistory } from '../core/in-app-history.service';
 import { SavedQuery } from '../core/models';
 import { SqlApiService } from '../core/sql-api.service';
 import { DiscardModalComponent } from '../shared/discard-modal.component';
@@ -11,114 +12,190 @@ import {
   DEFAULT_DIALECT,
   FORM_FIELDS,
   FieldErrors,
+  FieldMarkers,
   FormField,
   MORE_FIELDS,
   SAVE_LIMITS,
   SQL_COUNTER_FROM,
   SaveDraft,
+  draftFromQuery,
   emptyDraft,
   firstInvalid,
+  mergeOnReload,
+  moreSummary,
   mutationToast,
   sameDraft,
   toCreateRequest,
+  toPatchRequest,
   validateDraft,
   validateField
 } from './save-form';
 
 type TextField = 'title' | 'description' | 'sql_content' | 'notes';
+type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
-/** Save form, create mode (Story 3.4): Title, Description, SQL required; Tags, Notes, Dialect under "More options". */
+/**
+ * Save form (Story 3.4) and its edit mode (Story 3.5, route `data.mode = 'edit'`): Title, Description, SQL required;
+ * Tags, Notes, Dialect under "More options". Edit sends PATCH with `version`; a 409 offers Merge on Reload.
+ */
 @Component({
   selector: 'sql-save-query',
   standalone: true,
-  imports: [TagsInputComponent, DiscardModalComponent],
+  imports: [TagsInputComponent, DiscardModalComponent, RouterLink, NgTemplateOutlet],
   template: `
     <section class="save-page">
-      <h1 class="page-title">New query</h1>
-      @if (formError(); as msg) {
-        <div class="banner banner-danger form-banner" role="alert">
-          <span class="banner-glyph" aria-hidden="true">✕</span><span>{{ msg }}</span>
-        </div>
+      @if (isEdit) {
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a [routerLink]="libraryUrl">Library</a><span aria-hidden="true"> › </span>
+          @if (baseTitle()) {
+            <a class="crumb-title" [routerLink]="['/sql/queries', id]" [attr.title]="baseTitle()">{{ baseTitle() }}</a
+            ><span aria-hidden="true"> › </span>
+          }
+          <span aria-current="page">Edit</span>
+        </nav>
       }
-      <form novalidate (submit)="$event.preventDefault(); submit()" (keydown)="onFormKeydown($event)">
-        <div class="field">
-          <div class="label-row">
-            <label class="label" for="sql-save-title">Title</label>
-            <span class="counter" [class.over]="draft().title.length > limits.title">{{ draft().title.length }}/{{ limits.title }}</span>
+      @switch (loadState()) {
+        @case ('loading') {
+          <div class="skeleton-form" aria-hidden="true">
+            <div class="bar w40"></div>
+            <div class="bar"></div>
+            <div class="bar tall"></div>
+            <div class="bar code"></div>
           </div>
-          <input id="sql-save-title" class="text-input" type="text" autocomplete="off" required
-            [class.invalid]="!!errors().title" [attr.aria-invalid]="!!errors().title"
-            [attr.aria-describedby]="errors().title ? 'sql-save-title-error' : null"
-            [value]="draft().title" (input)="setText('title', $event)" />
-          @if (errors().title; as e) { <p id="sql-save-title-error" class="field-error" role="alert">{{ e }}</p> }
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label class="label" for="sql-save-description">Description</label>
-            <span class="counter" [class.over]="draft().description.length > limits.description">{{ draft().description.length }}/{{ limits.description }}</span>
-          </div>
-          <textarea id="sql-save-description" class="text-input" rows="3" required
-            [class.invalid]="!!errors().description" [attr.aria-invalid]="!!errors().description"
-            [attr.aria-describedby]="errors().description ? 'sql-save-description-error' : null"
-            [value]="draft().description" (input)="setText('description', $event)"></textarea>
-          @if (errors().description; as e) { <p id="sql-save-description-error" class="field-error" role="alert">{{ e }}</p> }
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label class="label" for="sql-save-sql_content">SQL</label>
-            @if (draft().sql_content.length > sqlCounterFrom) {
-              <span class="counter" [class.over]="sqlOverLimit()">{{ draft().sql_content.length }}/{{ limits.sql_content }}</span>
+          <span class="sr-only" role="status" aria-live="polite">Loading</span>
+        }
+        @case ('not-found') {
+          <div class="empty-state not-found">
+            <p role="alert">{{ notFoundMessage }}</p>
+            @if (lostSql(); as sql) {
+              <pre class="code-block lost-sql"><code>{{ sql }}</code></pre>
             }
-          </div>
-          <textarea id="sql-save-sql_content" class="sql-textarea" rows="8" spellcheck="false" required
-            [class.invalid]="!!errors().sql_content" [attr.aria-invalid]="!!errors().sql_content"
-            [attr.aria-describedby]="errors().sql_content ? 'sql-save-sql_content-error' : null"
-            [value]="draft().sql_content" (input)="setText('sql_content', $event); grow($event)"
-            (keydown)="onSqlKeydown($event)"></textarea>
-          @if (errors().sql_content; as e) { <p id="sql-save-sql_content-error" class="field-error" role="alert">{{ e }}</p> }
-        </div>
-
-        <button type="button" class="btn btn-ghost more-toggle" aria-controls="sql-save-more"
-          [attr.aria-expanded]="moreOpen()" (click)="moreOpen.set(!moreOpen())">
-          More options <span class="chevron" aria-hidden="true">{{ moreOpen() ? '▾' : '▸' }}</span>
-        </button>
-        @if (moreOpen()) {
-          <div id="sql-save-more" class="more">
-            <div class="field">
-              <label class="label" for="sql-save-tags">Tags</label>
-              <sql-tags-input inputId="sql-save-tags" [tags]="draft().tags" [maxTags]="limits.tags" [maxLength]="limits.tag"
-                [class.invalid]="!!errors().tags" (tagsChange)="setTags($event)" (rejected)="setFieldError('tags', $event)" />
-              @if (errors().tags; as e) { <p class="field-error" role="alert">{{ e }}</p> }
-            </div>
-            <div class="field">
-              <div class="label-row">
-                <label class="label" for="sql-save-notes">Notes</label>
-                <span class="counter" [class.over]="draft().notes.length > limits.notes">{{ draft().notes.length }}/{{ limits.notes }}</span>
-              </div>
-              <textarea id="sql-save-notes" class="text-input" rows="3"
-                [class.invalid]="!!errors().notes" [attr.aria-invalid]="!!errors().notes"
-                [attr.aria-describedby]="errors().notes ? 'sql-save-notes-error' : null"
-                [value]="draft().notes" (input)="setText('notes', $event)"></textarea>
-              @if (errors().notes; as e) { <p id="sql-save-notes-error" class="field-error" role="alert">{{ e }}</p> }
-            </div>
-            <div class="field">
-              <label class="label" for="sql-save-dialect">Dialect</label>
-              <select id="sql-save-dialect" class="text-input" [class.invalid]="!!errors().dialect" [attr.aria-invalid]="!!errors().dialect">
-                <option value="postgresql" selected>PostgreSQL</option>
-              </select>
-              @if (errors().dialect; as e) { <p class="field-error" role="alert">{{ e }}</p> }
-            </div>
+            <div class="empty-actions"><a class="btn btn-secondary" [routerLink]="libraryUrl">Back to Library</a></div>
           </div>
         }
+        @case ('error') {
+          <div class="banner banner-danger form-banner" role="alert">
+            <span class="banner-glyph" aria-hidden="true">✕</span><span>{{ formError() }}</span>
+            <button type="button" class="btn btn-sm btn-secondary" (click)="load()">Retry</button>
+          </div>
+        }
+        @case ('ready') {
+          <h1 class="page-title">{{ isEdit ? 'Edit query' : 'New query' }}</h1>
+          @if (isEdit) {
+            <p class="edit-notice"><span class="banner-glyph" aria-hidden="true">i</span> Changing the SQL re-checks its read-only status.</p>
+          }
+          @if (conflict()) {
+            <div class="banner banner-danger form-banner conflict-banner" role="alert" aria-live="assertive">
+              <span class="banner-glyph" aria-hidden="true">!</span><span>{{ conflictMessage }}</span>
+              <button type="button" class="btn btn-sm btn-secondary reload-btn" [disabled]="reloading()" (click)="reload()">
+                {{ reloading() ? 'Reloading…' : 'Reload' }}
+              </button>
+            </div>
+          }
+          @if (formError(); as msg) {
+            <div class="banner banner-danger form-banner form-error" role="alert">
+              <span class="banner-glyph" aria-hidden="true">✕</span><span>{{ msg }}</span>
+            </div>
+          }
+          <form novalidate (submit)="$event.preventDefault(); submit()" (keydown)="onFormKeydown($event)">
+            <div class="field">
+              <div class="label-row">
+                <label class="label" for="sql-save-title">Title</label>
+                <span class="counter" [class.over]="draft().title.length > limits.title">{{ draft().title.length }}/{{ limits.title }}</span>
+              </div>
+              <input id="sql-save-title" class="text-input" type="text" autocomplete="off" required
+                [class.invalid]="!!errors().title" [attr.aria-invalid]="!!errors().title"
+                [attr.aria-describedby]="errors().title ? 'sql-save-title-error' : null"
+                [value]="draft().title" (input)="setText('title', $event)" />
+              @if (errors().title; as e) { <p id="sql-save-title-error" class="field-error" role="alert">{{ e }}</p> }
+              <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().title }" />
+            </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary" [disabled]="saving() || sqlOverLimit()">{{ saving() ? 'Saving…' : 'Save' }}</button>
-          <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-        </div>
-      </form>
+            <div class="field">
+              <div class="label-row">
+                <label class="label" for="sql-save-description">Description</label>
+                <span class="counter" [class.over]="draft().description.length > limits.description">{{ draft().description.length }}/{{ limits.description }}</span>
+              </div>
+              <textarea id="sql-save-description" class="text-input" rows="3" required
+                [class.invalid]="!!errors().description" [attr.aria-invalid]="!!errors().description"
+                [attr.aria-describedby]="errors().description ? 'sql-save-description-error' : null"
+                [value]="draft().description" (input)="setText('description', $event)"></textarea>
+              @if (errors().description; as e) { <p id="sql-save-description-error" class="field-error" role="alert">{{ e }}</p> }
+              <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().description }" />
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label class="label" for="sql-save-sql_content">SQL</label>
+                @if (draft().sql_content.length > sqlCounterFrom) {
+                  <span class="counter" [class.over]="sqlOverLimit()">{{ draft().sql_content.length }}/{{ limits.sql_content }}</span>
+                }
+              </div>
+              <textarea id="sql-save-sql_content" class="sql-textarea" rows="8" spellcheck="false" required
+                [class.invalid]="!!errors().sql_content" [attr.aria-invalid]="!!errors().sql_content"
+                [attr.aria-describedby]="errors().sql_content ? 'sql-save-sql_content-error' : null"
+                [value]="draft().sql_content" (input)="setText('sql_content', $event); grow($event)"
+                (keydown)="onSqlKeydown($event)"></textarea>
+              @if (errors().sql_content; as e) { <p id="sql-save-sql_content-error" class="field-error" role="alert">{{ e }}</p> }
+              <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().sql_content }" />
+            </div>
+
+            <button type="button" class="btn btn-ghost more-toggle" aria-controls="sql-save-more"
+              [attr.aria-expanded]="moreOpen()" (click)="moreOpen.set(!moreOpen())">
+              More options
+              @if (isEdit) { <span class="more-summary">· {{ summary() }}</span> }
+              <span class="chevron" aria-hidden="true">{{ moreOpen() ? '▾' : '▸' }}</span>
+            </button>
+            @if (moreOpen()) {
+              <div id="sql-save-more" class="more">
+                <div class="field">
+                  <label class="label" for="sql-save-tags">Tags</label>
+                  <sql-tags-input inputId="sql-save-tags" [tags]="draft().tags" [maxTags]="limits.tags" [maxLength]="limits.tag"
+                    [class.invalid]="!!errors().tags" (tagsChange)="setTags($event)" (rejected)="setFieldError('tags', $event)" />
+                  @if (errors().tags; as e) { <p class="field-error" role="alert">{{ e }}</p> }
+                  <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().tags }" />
+                </div>
+                <div class="field">
+                  <div class="label-row">
+                    <label class="label" for="sql-save-notes">Notes</label>
+                    <span class="counter" [class.over]="draft().notes.length > limits.notes">{{ draft().notes.length }}/{{ limits.notes }}</span>
+                  </div>
+                  <textarea id="sql-save-notes" class="text-input" rows="3"
+                    [class.invalid]="!!errors().notes" [attr.aria-invalid]="!!errors().notes"
+                    [attr.aria-describedby]="errors().notes ? 'sql-save-notes-error' : null"
+                    [value]="draft().notes" (input)="setText('notes', $event)"></textarea>
+                  @if (errors().notes; as e) { <p id="sql-save-notes-error" class="field-error" role="alert">{{ e }}</p> }
+                  <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().notes }" />
+                </div>
+                <div class="field">
+                  <label class="label" for="sql-save-dialect">Dialect</label>
+                  <select id="sql-save-dialect" class="text-input" [class.invalid]="!!errors().dialect" [attr.aria-invalid]="!!errors().dialect">
+                    <option value="postgresql" selected>PostgreSQL</option>
+                  </select>
+                  @if (errors().dialect; as e) { <p class="field-error" role="alert">{{ e }}</p> }
+                </div>
+              </div>
+            }
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="saving() || sqlOverLimit()">
+                {{ saving() ? 'Saving…' : isEdit ? 'Save changes' : 'Save' }}
+              </button>
+              <button type="button" class="btn btn-secondary cancel-btn" (click)="cancel()">Cancel</button>
+            </div>
+          </form>
+        }
+      }
     </section>
+
+    <ng-template #markerTpl let-m>
+      @if (m) {
+        <p class="marker">Your change{{ m.server !== null ? ' — also changed by someone else' : '' }}</p>
+        @if (m.server !== null) {
+          <p class="marker-server">Their version: <span class="marker-value">{{ m.server }}</span></p>
+        }
+      }
+    </ng-template>
 
     @if (discardOpen()) {
       <sql-discard-modal (keepEditing)="resolveDiscard(false)" (discard)="resolveDiscard(true)" />
@@ -130,14 +207,23 @@ export class SaveQueryComponent {
   private readonly api = inject(SqlApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly location = inject(Location);
+  private readonly history = inject(InAppHistory);
   private readonly toasts = inject(ToastService);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+
+  readonly isEdit = this.route.snapshot.data['mode'] === 'edit';
+  readonly id = Number(this.route.snapshot.paramMap.get('id'));
+  readonly notFoundMessage = ERROR_MESSAGES['NOT_FOUND'];
+  readonly conflictMessage = ERROR_MESSAGES['CONFLICT'];
+  readonly libraryUrl = this.router.parseUrl(this.history.lastLibraryUrl());
 
   readonly limits = SAVE_LIMITS;
   readonly sqlCounterFrom = SQL_COUNTER_FROM;
 
+  /** Create: the blank/prefilled draft. Edit: the server version the edit is based on. */
   private initial: SaveDraft = emptyDraft();
+  /** Edit: version sent with PATCH. */
+  private version = 0;
   readonly draft = signal<SaveDraft>(emptyDraft());
   readonly errors = signal<FieldErrors>({});
   readonly formError = signal<string | null>(null);
@@ -145,6 +231,15 @@ export class SaveQueryComponent {
   readonly saving = signal(false);
   readonly discardOpen = signal(false);
 
+  readonly loadState = signal<LoadState>(this.isEdit ? 'loading' : 'ready');
+  readonly baseTitle = signal('');
+  readonly conflict = signal(false);
+  readonly reloading = signal(false);
+  readonly markers = signal<FieldMarkers>({});
+  /** Edit 404 on save: the user's SQL stays selectable on screen. */
+  readonly lostSql = signal<string | null>(null);
+
+  readonly summary = computed(() => moreSummary(this.draft()));
   readonly sqlOverLimit = computed(() => this.draft().sql_content.length > SAVE_LIMITS.sql_content);
 
   /** After the first submit, fields re-validate live (EXPERIENCE.md). */
@@ -154,8 +249,14 @@ export class SaveQueryComponent {
   private escBeforeTab = false;
   private pendingDiscard: ((leave: boolean) => void) | null = null;
 
+  constructor() {
+    if (this.isEdit) {
+      this.load();
+    }
+  }
+
   get dirty(): boolean {
-    return !this.done && !sameDraft(this.draft(), this.initial);
+    return !this.done && this.loadState() === 'ready' && !sameDraft(this.draft(), this.initial);
   }
 
   /** Prefill hook for the Generate / Validate / outage entry points (Epic 7). */
@@ -163,6 +264,51 @@ export class SaveQueryComponent {
     this.initial = { ...emptyDraft(), ...draft, dialect: draft.dialect || DEFAULT_DIALECT };
     this.draft.set({ ...this.initial });
     this.moreOpen.set(expandMore);
+  }
+
+  /** Edit mode: loads the query into the form. */
+  load(): void {
+    this.loadState.set('loading');
+    this.formError.set(null);
+    this.api.getQuery(this.id).subscribe({
+      next: (q) => {
+        this.adopt(q);
+        this.draft.set({ ...this.initial, tags: [...this.initial.tags] });
+        this.loadState.set('ready');
+      },
+      error: (err) => {
+        const ui = toUiError(err);
+        if (isNotFound(ui)) {
+          this.loadState.set('not-found');
+        } else {
+          this.formError.set(ui.message);
+          this.loadState.set('error');
+        }
+      }
+    });
+  }
+
+  /** 409 → Reload: fetch the latest version and merge it under the fields the user changed. */
+  reload(): void {
+    if (this.reloading()) {
+      return;
+    }
+    this.reloading.set(true);
+    this.api.getQuery(this.id).subscribe({
+      next: (q) => {
+        this.reloading.set(false);
+        const base = this.initial;
+        this.adopt(q);
+        const merged = mergeOnReload(base, this.draft(), this.initial);
+        this.draft.set(merged.draft);
+        this.markers.set(merged.markers);
+        this.conflict.set(false);
+      },
+      error: (err) => {
+        this.reloading.set(false);
+        this.onError(err);
+      }
+    });
   }
 
   setText(field: TextField, event: Event): void {
@@ -211,7 +357,7 @@ export class SaveQueryComponent {
   }
 
   submit(): void {
-    if (this.saving()) {
+    if (this.saving() || this.loadState() !== 'ready') {
       return;
     }
     this.submitted = true;
@@ -224,19 +370,19 @@ export class SaveQueryComponent {
       return;
     }
     this.saving.set(true);
-    this.api.createQuery(toCreateRequest(this.draft())).subscribe({
+    this.conflict.set(false);
+    const request = this.isEdit
+      ? this.api.patchQuery(this.id, toPatchRequest(this.draft(), this.initial, this.version))
+      : this.api.createQuery(toCreateRequest(this.draft()));
+    request.subscribe({
       next: (saved) => this.onSaved(saved),
       error: (err) => this.onError(err)
     });
   }
 
-  /** Back to the previous surface (its session state is intact); Library when the form was the entry page. */
+  /** Back to the previous in-app surface; otherwise Library (create) or the detail page (edit). Never leaves the app. */
   cancel(): void {
-    if (this.router.lastSuccessfulNavigation?.previousNavigation) {
-      this.location.back();
-    } else {
-      this.router.navigate(['/sql/library']);
-    }
+    this.history.back(this.isEdit ? `/sql/queries/${this.id}` : '/sql/library');
   }
 
   /** CanDeactivate: asks "Discard your changes?" when the form has unsaved edits. */
@@ -288,18 +434,34 @@ export class SaveQueryComponent {
     });
   }
 
+  private adopt(q: SavedQuery): void {
+    this.initial = draftFromQuery(q);
+    this.version = q.version;
+    this.baseTitle.set(q.title);
+  }
+
   private onSaved(saved: SavedQuery): void {
     this.saving.set(false);
     this.done = true;
     const toast = mutationToast(saved);
     this.toasts.show(toast.kind, toast.text);
-    this.router.navigate(['..', saved.id], { relativeTo: this.route });
+    this.router.navigate(['/sql/queries', saved.id]);
   }
 
   private onError(err: unknown): void {
     this.saving.set(false);
     const ui = toUiError(err);
     const field = ui.field;
+    if (this.isEdit && ui.code === 'CONFLICT') {
+      this.conflict.set(true);
+      return;
+    }
+    if (this.isEdit && isNotFound(ui)) {
+      this.done = true;
+      this.lostSql.set(this.draft().sql_content || null);
+      this.loadState.set('not-found');
+      return;
+    }
     if (ui.code === 'VALIDATION_FAILED' && field && (FORM_FIELDS as readonly string[]).includes(field)) {
       this.errors.update((e) => ({ ...e, [field]: ui.message }));
       this.focusField(field as FormField);
@@ -315,6 +477,10 @@ export class SaveQueryComponent {
     // After render, so a just-expanded "More options" field exists.
     setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>(`#sql-save-${field}`)?.focus());
   }
+}
+
+function isNotFound(ui: { code: string | null; status: number }): boolean {
+  return ui.code === 'NOT_FOUND' || ui.status === 404;
 }
 
 export const confirmLeaveSaveForm: CanDeactivateFn<SaveQueryComponent> = (c) => c.canLeave();
