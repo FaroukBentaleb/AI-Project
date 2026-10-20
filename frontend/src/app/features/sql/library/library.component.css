@@ -51,3 +51,6 @@
 .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .segment + .segment { border-left: 0; }
 .segment:not(:first-of-type):not(:last-of-type) { border-radius: 0; }
+.export { white-space: nowrap; }
+.export:disabled { opacity: 0.6; cursor: progress; }
+.export-error { margin-bottom: 10px; }

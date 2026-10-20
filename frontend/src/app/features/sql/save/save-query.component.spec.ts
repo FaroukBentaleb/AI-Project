@@ -43,6 +43,7 @@ describe('SaveQueryComponent', () => {
 
   afterEach(() => {
     toasts.dismiss();
+    backend.match((r) => r.url.endsWith('/queries/similar')); // Story 8.4 suggestions are advisory
     backend.verify();
   });
 

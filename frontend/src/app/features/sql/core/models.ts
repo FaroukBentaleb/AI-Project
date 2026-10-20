@@ -42,6 +42,19 @@ export interface ValidateResponse {
   safety_note: string;
 }
 
+/** Story 8.4: an Indexed Query similar to a draft on the Save form. */
+export interface SimilarQuery {
+  id: number;
+  title: string;
+}
+
+/** Story 8.4 draft body for `POST /queries/similar`. */
+export interface SimilarQueryDraft {
+  title: string;
+  description: string;
+  sql_content: string;
+}
+
 /** A Saved Query injected as an Example (6.4). */
 export interface ExampleRef {
   id: number;

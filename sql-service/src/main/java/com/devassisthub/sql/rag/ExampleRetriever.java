@@ -81,6 +81,30 @@ public class ExampleRetriever {
         }
     }
 
+    /**
+     * Story 8.4 (FR34): up to {@code limit} Indexed Queries similar to a draft, best first, same threshold and
+     * Postgres eligibility re-check as {@link #retrieve}. Never throws; RAG off or any failure yields an empty list.
+     */
+    public List<Example> similar(String text, int limit) {
+        if (!enabled || limit <= 0 || text == null || text.isBlank()) {
+            return List.of();
+        }
+        try {
+            EmbeddingResult r = embedding.embed(text);
+            if (r instanceof EmbeddingResult.Unavailable u) {
+                log.warn("Similar queries unavailable: embedding failed ({})", u.cause());
+                return List.of();
+            }
+            float[] vector = ((EmbeddingResult.Embedded) r).vector();
+            List<QdrantClient.ScoredId> hits = qdrant.search(vector, Math.max(topK, limit), threshold);
+            List<Example> examples = hits.isEmpty() ? List.of() : qualifying(hits);
+            return examples.size() > limit ? List.copyOf(examples.subList(0, limit)) : examples;
+        } catch (RuntimeException e) {
+            log.warn("Similar queries unavailable: {}", e.getClass().getSimpleName());
+            return List.of();
+        }
+    }
+
     private List<Example> qualifying(List<QdrantClient.ScoredId> hits) {
         List<Long> ids = hits.stream().map(QdrantClient.ScoredId::id).toList();
         Map<Long, SavedQuery> rows = repository.findAllById(ids).stream()

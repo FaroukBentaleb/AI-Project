@@ -1,7 +1,7 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { GenerateResponse, Page, QueryParams, SavedQuery, ValidateResponse } from './models';
+import { GenerateResponse, Page, QueryParams, SavedQuery, SimilarQuery, SimilarQueryDraft, ValidateResponse } from './models';
 import { SQL_API_BASE } from './sql-api.config';
 import type { CreateQueryRequest, PatchQueryRequest } from '../save/save-form';
 
@@ -18,6 +18,20 @@ export class SqlApiService {
 
   listQueries(params: QueryParams = {}): Observable<Page<SavedQuery>> {
     return this.http.get<Page<SavedQuery>>(`${this.baseUrl}/queries`, { params: toHttpParams(params) });
+  }
+
+  /** Story 8.5 (FR35): the filtered library as a `.sql` text file (same filters/sort as the list, no paging). */
+  exportQueries(params: QueryParams = {}): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.baseUrl}/queries/export`, {
+      params: toHttpParams(params),
+      observe: 'response',
+      responseType: 'blob'
+    });
+  }
+
+  /** Story 8.4 (FR34): up to 3 Indexed Queries similar to a draft; `[]` when RAG is unavailable. */
+  similarQueries(draft: SimilarQueryDraft): Observable<SimilarQuery[]> {
+    return this.http.post<SimilarQuery[]>(`${this.baseUrl}/queries/similar`, draft);
   }
 
   getQuery(id: number): Observable<SavedQuery> {

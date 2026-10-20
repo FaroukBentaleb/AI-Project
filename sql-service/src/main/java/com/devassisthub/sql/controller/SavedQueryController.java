@@ -13,7 +13,15 @@ import com.devassisthub.sql.service.LibraryFilter;
 import com.devassisthub.sql.service.LibraryPaging;
 import com.devassisthub.sql.service.SavedQueryService;
 import jakarta.validation.Valid;
+import com.devassisthub.sql.service.SqlExportWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +60,27 @@ public class SavedQueryController {
         SavedQuery saved = service.create(request, author);
         return ResponseEntity.created(URI.create("/api/sql/queries/" + saved.getId()))
                 .body(SavedQueryResponse.fromMutation(saved));
+    }
+
+    /** Story 8.5 (FR35): same filters/sort as the list, all matches, as a downloadable text script. */
+    @GetMapping("/export")
+    public ResponseEntity<String> export(@RequestParam(name = "sort", required = false) String sort,
+                                         @RequestParam(name = "q", required = false) String q,
+                                         @RequestParam(name = "tags", required = false) String tags,
+                                         @RequestParam(name = "author", required = false) String author,
+                                         @RequestParam(name = "llm_generated", required = false) String llmGenerated,
+                                         @RequestParam(name = "read_only", required = false) String readOnly,
+                                         @RequestParam(name = "deprecated", required = false) String deprecated) {
+        LibraryFilter filter = LibraryFilter.of(q, tags, author, llmGenerated, readOnly, deprecated);
+        Sort order = LibraryPaging.of(null, null, sort).getSort();
+        String body = SqlExportWriter.write(service.exportAll(filter, order));
+        String filename = "sql-library-" + LocalDate.now(ZoneOffset.UTC) + ".sql";
+        return ResponseEntity.ok()
+                .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(filename).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(body);
     }
 
     @GetMapping("/{id}")

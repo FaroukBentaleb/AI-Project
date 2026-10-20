@@ -46,10 +46,15 @@ public class QueryIndexer {
 
     /** Embedded text: {@code title \n description \n sql_content [\n original_nl_prompt]}. */
     public static String embeddedText(SavedQuery q) {
+        return embeddedText(q.getTitle(), q.getDescription(), q.getSqlContent(), q.getOriginalNlPrompt());
+    }
+
+    /** Same layout for an unsaved draft (Story 8.4), so draft and stored vectors are comparable. */
+    public static String embeddedText(String title, String description, String sqlContent, String nlPrompt) {
         StringBuilder sb = new StringBuilder()
-                .append(q.getTitle()).append('\n').append(q.getDescription()).append('\n').append(q.getSqlContent());
-        if (q.getOriginalNlPrompt() != null && !q.getOriginalNlPrompt().isBlank()) {
-            sb.append('\n').append(q.getOriginalNlPrompt());
+                .append(title).append('\n').append(description).append('\n').append(sqlContent);
+        if (nlPrompt != null && !nlPrompt.isBlank()) {
+            sb.append('\n').append(nlPrompt);
         }
         return sb.toString();
     }

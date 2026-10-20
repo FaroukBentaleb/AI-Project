@@ -29,3 +29,8 @@ sql-tags-input.invalid { display: block; border-radius: 6px; outline: 1px solid 
 .not-found .lost-sql { text-align: left; margin: 0 0 12px; user-select: text; }
 .original-prompt { margin: 0 0 16px; font-size: 13px; color: var(--sql-text-muted); overflow-wrap: anywhere; }
 .original-prompt .label { display: inline; margin: 0 6px 0 0; }
+.similar { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--sql-input-border); border-radius: 6px; }
+.similar-heading { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--sql-text-muted); }
+.similar-list { margin: 0; padding-left: 18px; font-size: 13px; }
+.similar-list li + li { margin-top: 2px; }
+.similar-link { color: var(--sql-accent); overflow-wrap: anywhere; }

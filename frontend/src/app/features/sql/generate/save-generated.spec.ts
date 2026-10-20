@@ -56,6 +56,7 @@ describe('Save generated SQL (Story 7.2)', () => {
 
   afterEach(() => {
     toasts.dismiss();
+    backend.match((r) => r.url.endsWith('/queries/similar')); // Story 8.4 suggestions are advisory
     backend.verify();
   });
 

@@ -47,7 +47,10 @@ describe('ValidateComponent', () => {
     h = await RouterTestingHarness.create('/sql/validate');
   });
 
-  afterEach(() => backend.verify());
+  afterEach(() => {
+    backend.match((r) => r.url.endsWith('/queries/similar')); // Story 8.4 suggestions are advisory
+    backend.verify();
+  });
 
   const el = () => h.routeNativeElement as HTMLElement;
   const q = <T extends HTMLElement>(sel: string) => el().querySelector<T>(sel);

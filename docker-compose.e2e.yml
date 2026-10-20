@@ -14,6 +14,11 @@ services:
     environment:
       PORT: 8099
       EMBEDDING_DIM: 384
+      # Story 8.2: added latency on generation calls (burst test / Plan B rehearsal), e.g. STUB_LATENCY_MS=6000.
+      STUB_LATENCY_MS: ${STUB_LATENCY_MS:-0}
+      STUB_JITTER_MS: ${STUB_JITTER_MS:-0}
+    ports:
+      - "8099:8099"   # Story 8.2: lets scripts/warmup.sh be rehearsed against the stub from the host
     volumes:
       - ./scripts/e2e/llm-stub:/stub:ro
     healthcheck:

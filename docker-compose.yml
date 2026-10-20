@@ -162,6 +162,9 @@ services:
       HF_MODEL: ${SQL_HF_MODEL:-defog/sqlcoder-7b-2}
       HF_EMBEDDING_MODEL: ${HF_EMBEDDING_MODEL}
       HF_RETRY_MAX_ATTEMPTS: 1
+      # Story 8.2: demo profile (INFO logs, LLM-down switch SQL_DEMO_LLM_DEAD_HOST). Plan B: docker-compose.planb.yml.
+      SPRING_PROFILES_ACTIVE: ${SQL_SPRING_PROFILES:-demo}
+      SQL_DEMO_LLM_DEAD_HOST: ${SQL_DEMO_LLM_DEAD_HOST:-false}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6334

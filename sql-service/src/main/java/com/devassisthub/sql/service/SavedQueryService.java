@@ -206,4 +206,19 @@ public class SavedQueryService {
     public Page<SavedQuery> list(LibraryFilter filter, Pageable pageable) {
         return repository.search(filter, pageable);
     }
+
+    /** Story 8.5 (FR35): every non-deleted query matching {@code filter}, in {@code sort} order (all pages). */
+    @Transactional(readOnly = true)
+    public List<SavedQuery> exportAll(LibraryFilter filter, org.springframework.data.domain.Sort sort) {
+        List<SavedQuery> all = new java.util.ArrayList<>();
+        int page = 0;
+        Page<SavedQuery> p;
+        do {
+            p = repository.search(filter, org.springframework.data.domain.PageRequest.of(page++, EXPORT_BATCH, sort));
+            all.addAll(p.getContent());
+        } while (p.hasNext());
+        return all;
+    }
+
+    static final int EXPORT_BATCH = 500;
 }

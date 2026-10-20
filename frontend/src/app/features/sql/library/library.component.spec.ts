@@ -26,7 +26,10 @@ describe('LibraryComponent', () => {
     });
     backend = TestBed.inject(HttpTestingController);
   });
-  afterEach(() => backend.verify());
+  afterEach(() => {
+    backend.match((r) => r.url.endsWith('/queries/similar')); // Story 8.4 suggestions are advisory
+    backend.verify();
+  });
 
   const el = (h: RouterTestingHarness) => h.routeNativeElement as HTMLElement;
   const pending = (): TestRequest => backend.expectOne((r) => r.url.endsWith('/sql/queries'));

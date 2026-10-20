@@ -96,7 +96,7 @@ await step('1. Generate (UJ-1 prompt) -> SQL, Warnings, Safety Note, Examples us
   check(r.status === 200, `status ${r.status}: ${r.text.slice(0, 300)}`);
   const g = r.json;
   check(typeof g.sql === 'string' && /^\s*(select|with)\b/i.test(g.sql), `sql not a SELECT: ${g.sql}`);
-  check(g.valid === true && g.source === 'llm', `valid=${g.valid} source=${g.source}`);
+  check(g.valid === true && g.source === 'llm-generated', `valid=${g.valid} source=${g.source}`);
   check(typeof g.safety_note === 'string' && g.safety_note.length > 0, 'no safety_note');
   check(Array.isArray(g.warnings) && Array.isArray(g.examples_used), 'warnings / examples_used missing');
   check(g.original_prompt === UJ1_PROMPT, 'original_prompt not echoed');

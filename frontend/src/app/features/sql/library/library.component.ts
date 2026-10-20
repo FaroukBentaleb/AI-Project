@@ -55,7 +55,22 @@ export const SEARCH_DEBOUNCE_MS = 300;
             <option [value]="o.value" [selected]="o.value === s.sort">{{ o.label }}</option>
           }
         </select>
+        <button
+          type="button"
+          class="btn btn-secondary export"
+          [disabled]="exporting()"
+          [attr.aria-busy]="exporting()"
+          title="Download the queries matching these filters as a .sql file"
+          (click)="exportSql()"
+        >{{ exporting() ? 'Exporting…' : 'Export .sql' }}</button>
       </div>
+      @if (exportError()) {
+        <div class="banner banner-danger export-error" role="alert">
+          <span class="banner-glyph" aria-hidden="true">!</span>
+          <span class="banner-text">Export failed: {{ exportError() }}</span>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="exportError.set('')">Dismiss</button>
+        </div>
+      }
 
       <div class="filter-bar" role="group" aria-label="Filters">
         <sql-tags-input
@@ -297,6 +312,29 @@ export class LibraryComponent {
     this.navigate({ ...DEFAULT_STATE, sort: this.state().sort });
   }
 
+  readonly exporting = signal(false);
+  readonly exportError = signal('');
+
+  /** Story 8.5 (FR35): downloads every query matching the current filters/sort (all pages) as a .sql file. */
+  exportSql(): void {
+    if (this.exporting()) {
+      return;
+    }
+    const { page: _page, size: _size, ...params } = toApiParams(this.state());
+    this.exporting.set(true);
+    this.exportError.set('');
+    this.api.exportQueries(params).subscribe({
+      next: (res) => {
+        this.exporting.set(false);
+        saveBlob(res.body ?? new Blob([], { type: 'text/plain' }), exportFilename(res.headers.get('Content-Disposition')));
+      },
+      error: (err) => {
+        this.exporting.set(false);
+        this.exportError.set(toUiError(err).message);
+      }
+    });
+  }
+
   retry(): void {
     this.retry$.next();
   }
@@ -339,4 +377,26 @@ export function pageWindow(current: number, total: number): Array<number | null>
     }
   }
   return out;
+}
+
+export const EXPORT_FALLBACK_FILENAME = 'sql-library.sql';
+
+/** Filename from `Content-Disposition` (quoted or bare), reduced to a safe `.sql` basename. */
+export function exportFilename(disposition: string | null): string {
+  const m = disposition?.match(/filename="?([^";]+)"?/i);
+  const name = m?.[1].trim().replace(/[\\/]/g, '_') ?? '';
+  return /^[\w.-]+\.sql$/.test(name) ? name : EXPORT_FALLBACK_FILENAME;
+}
+
+/** Triggers a browser download of `blob` without navigating away. */
+export function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url));
 }

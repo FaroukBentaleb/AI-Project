@@ -1,9 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, CanDeactivateFn, Router, RouterLink } from '@angular/router';
+import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { ERROR_MESSAGES, toUiError } from '../core/error-mapper';
 import { InAppHistory } from '../core/in-app-history.service';
-import { SavedQuery } from '../core/models';
+import { SavedQuery, SimilarQuery, SimilarQueryDraft } from '../core/models';
 import { SqlApiService } from '../core/sql-api.service';
 import { SqlSessionState } from '../core/session-state.service';
 import { DiscardModalComponent } from '../shared/discard-modal.component';
@@ -31,6 +33,10 @@ import {
   validateDraft,
   validateField
 } from './save-form';
+
+/** Story 8.4: quiet time after the last keystroke before asking for similar queries. */
+export const SIMILAR_DEBOUNCE_MS = 600;
+export const SIMILAR_MAX = 3;
 
 type TextField = 'title' | 'description' | 'sql_content' | 'notes';
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
@@ -141,6 +147,21 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
               <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().sql_content }" />
             </div>
 
+            @if (!isEdit) {
+              <div class="similar-slot" aria-live="polite">
+                @if (similar().length) {
+                  <aside class="similar" aria-label="Similar queries in the library">
+                    <p class="similar-heading">Similar queries already in the library</p>
+                    <ul class="similar-list">
+                      @for (s of similar(); track s.id) {
+                        <li><a class="similar-link" [routerLink]="['/sql/queries', s.id]" target="_blank" rel="noopener">{{ s.title }}</a></li>
+                      }
+                    </ul>
+                  </aside>
+                }
+              </div>
+            }
+
             @if (!isEdit && draft().is_llm_generated && draft().original_nl_prompt; as p) {
               <p class="original-prompt"><span class="label">Original prompt</span> <span class="original-prompt-text">“{{ p }}”</span></p>
             }
@@ -244,6 +265,10 @@ export class SaveQueryComponent {
   /** Edit 404 on save: the user's SQL stays selectable on screen. */
   readonly lostSql = signal<string | null>(null);
 
+  /** Story 8.4 (FR34): advisory only; never blocks or delays Save, any failure means no suggestions. */
+  readonly similar = signal<SimilarQuery[]>([]);
+  private readonly similarDraft = new Subject<SimilarQueryDraft>();
+
   readonly summary = computed(() => moreSummary(this.draft()));
   readonly sqlOverLimit = computed(() => this.draft().sql_content.length > SAVE_LIMITS.sql_content);
 
@@ -260,6 +285,7 @@ export class SaveQueryComponent {
     if (this.isEdit) {
       this.load();
     } else {
+      this.watchSimilar();
       // Save from Validate (EXPERIENCE.md prefill 2): the normalized SQL, handed over via session state.
       // Save from Generate (prefill 1): the SQL, the original prompt, is_llm_generated = true.
       // Manual after an outage (prefill 3): the prompt in Notes, More options expanded, is_llm_generated = false.
@@ -281,6 +307,7 @@ export class SaveQueryComponent {
     this.initial = { ...emptyDraft(), ...draft, dialect: draft.dialect || DEFAULT_DIALECT };
     this.draft.set({ ...this.initial });
     this.moreOpen.set(expandMore);
+    this.askSimilar();
   }
 
   /** Edit mode: loads the query into the form. */
@@ -433,8 +460,34 @@ export class SaveQueryComponent {
     }
   }
 
+  private watchSimilar(): void {
+    this.similarDraft
+      .pipe(
+        debounceTime(SIMILAR_DEBOUNCE_MS),
+        distinctUntilChanged((a, b) => a.title === b.title && a.description === b.description && a.sql_content === b.sql_content),
+        switchMap((d) =>
+          !d.title && !d.description && !d.sql_content
+            ? of<SimilarQuery[]>([])
+            : this.api.similarQueries(d).pipe(catchError(() => of<SimilarQuery[]>([])))
+        ),
+        takeUntilDestroyed()
+      )
+      .subscribe((list) => this.similar.set(Array.isArray(list) ? list.slice(0, SIMILAR_MAX) : []));
+  }
+
+  private askSimilar(): void {
+    if (this.isEdit) {
+      return;
+    }
+    const d = this.draft();
+    this.similarDraft.next({ title: d.title.trim(), description: d.description.trim(), sql_content: d.sql_content.trim() });
+  }
+
   private update(patch: Partial<SaveDraft>, field: FormField): void {
     this.draft.update((d) => ({ ...d, ...patch }));
+    if (field === 'title' || field === 'description' || field === 'sql_content') {
+      this.askSimilar();
+    }
     // Live per-field validation after the first submit; before it, editing only clears a server/limit error.
     const message = this.submitted ? validateField(this.draft(), field) : null;
     if (message === (this.errors()[field] ?? null)) {

@@ -5,6 +5,8 @@ import com.devassisthub.sql.llm.LlmHealthIndicator;
 import com.devassisthub.sql.llm.LlmProperties;
 import com.devassisthub.sql.llm.PromptTemplates;
 import java.net.http.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -17,13 +19,29 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties(LlmProperties.class)
 public class LlmConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(LlmConfig.class);
+
+    /** Story 8.2: discard port on loopback; the connection is refused at once (LLM_UNAVAILABLE, no wait). */
+    public static final String DEAD_HOST_URL = "http://127.0.0.1:9";
+
     @Bean
-    public LlmClient llmClient(LlmProperties props) {
+    public LlmClient llmClient(LlmProperties props,
+                               @Value("${sql.demo.llm-dead-host:false}") boolean deadHost) {
+        String baseUrl = baseUrl(props, deadHost);
         HttpClient http = HttpClient.newBuilder().connectTimeout(props.timeout()).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(http);
         factory.setReadTimeout(props.timeout());
-        RestClient rest = RestClient.builder().baseUrl(props.baseUrl()).requestFactory(factory).build();
+        RestClient rest = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
         return new LlmClient(rest, props);
+    }
+
+    /** Story 8.2 (addendum G 5.5): the LLM-down switch overrides {@code hf.base-url}, generation only. */
+    static String baseUrl(LlmProperties props, boolean deadHost) {
+        if (deadHost) {
+            log.warn("sql.demo.llm-dead-host=true: generation calls go to {} (LLM-down demo scenario)", DEAD_HOST_URL);
+            return DEAD_HOST_URL;
+        }
+        return props.baseUrl();
     }
 
     /** Story 6.5: bean name {@code llmHealthIndicator} gives the contributor name {@code llm}. */
