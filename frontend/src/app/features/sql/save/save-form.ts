@@ -133,17 +133,29 @@ export function sameDraft(a: SaveDraft, b: SaveDraft): boolean {
 
 export type ToastKind = 'success' | 'warning';
 
+/** Start of the server's indexing-failure Warning (`QueryIndexer.WARNING_PREFIX`). */
+export const NOT_INDEXED_WARNING_PREFIX = 'Not yet indexed';
+
+export function isIndexingWarning(w: string): boolean {
+  return w.trim().startsWith(NOT_INDEXED_WARNING_PREFIX);
+}
+
 /**
- * Post-mutation toast rule (EXPERIENCE.md): warnings[] first, then not-read-only/deprecated, then indexed.
+ * Post-mutation toast rule (EXPERIENCE.md): an indexing Warning first, then not-read-only/deprecated, then indexed.
+ * Other Warnings (read-only check, e.g. a risky function) keep the rule 2/3 text, append a count and make the
+ * toast a warning, since `warnings[]` also carries validator Warnings (Story 7.1 fix).
  */
 export function mutationToast(saved: SavedQuery, verb = 'Saved'): { kind: ToastKind; text: string } {
-  if (saved.warnings?.length) {
+  const warnings = saved.warnings ?? [];
+  if (warnings.some(isIndexingWarning)) {
     return { kind: 'warning', text: `${verb} · not yet indexed (team examples unavailable)` };
   }
-  if (saved.read_only === false || saved.deprecated) {
-    return { kind: 'success', text: verb };
+  const base = saved.read_only === false || saved.deprecated ? verb : `${verb} · added to team examples`;
+  const others = warnings.length;
+  if (others) {
+    return { kind: 'warning', text: `${base} · ${others} read-only check ${others === 1 ? 'warning' : 'warnings'}` };
   }
-  return { kind: 'success', text: `${verb} · added to team examples` };
+  return { kind: 'success', text: base };
 }
 
 /** Fields an edit can change (is_llm_generated and the original prompt are fixed at creation). */

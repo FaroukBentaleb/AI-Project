@@ -82,6 +82,16 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getError(), ex.getMessage(), ex.getField(), ex.getDetails()));
     }
 
+    /** FR-19: 503 with the cause's code and message; {@code Retry-After} only when an estimate is known. */
+    @ExceptionHandler(LlmFailureException.class)
+    ResponseEntity<ErrorResponse> handleLlmFailure(LlmFailureException ex) {
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(ex.getStatus());
+        if (ex.getRetryAfterSeconds() != null) {
+            builder.header(org.springframework.http.HttpHeaders.RETRY_AFTER, ex.getRetryAfterSeconds().toString());
+        }
+        return builder.body(new ErrorResponse(ex.getError(), ex.getMessage(), null, ex.getDetails()));
+    }
+
     /** Lost race between the version check and the flush: same 409 as a stale version. */
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     ResponseEntity<ErrorResponse> handleOptimisticLock(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {

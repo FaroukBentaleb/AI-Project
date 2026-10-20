@@ -27,3 +27,5 @@ sql-tags-input.invalid { display: block; border-radius: 6px; outline: 1px solid 
 .skeleton-form .tall { height: 60px; }
 .skeleton-form .code { height: 160px; }
 .not-found .lost-sql { text-align: left; margin: 0 0 12px; user-select: text; }
+.original-prompt { margin: 0 0 16px; font-size: 13px; color: var(--sql-text-muted); overflow-wrap: anywhere; }
+.original-prompt .label { display: inline; margin: 0 6px 0 0; }

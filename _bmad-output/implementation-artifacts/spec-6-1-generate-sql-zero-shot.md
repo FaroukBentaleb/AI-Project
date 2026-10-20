@@ -2,7 +2,7 @@
 title: 'Story 6.1: Generate SQL from a prompt (zero-shot, validated)'
 type: 'feature'
 created: '2026-10-19'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '7dacc58'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -62,16 +62,16 @@ context:
 - `llm/SqlExtractor.java` -- completion -> SQL.
 - `service/GenerationService.java`, `controller/GenerateController.java`, `dto/Generate*.java` -- endpoint.
 - `config/LlmConfig.java`, `application.yml`; `rag/EmbeddingClient.java` uses `HfHttp`.
-- Tests: `llm/SqlExtractorTest`, `llm/LlmClientTest`, `controller/GenerateControllerTest` (MockWebServer).
+- Tests: `llm/SqlExtractorTest`, `controller/GenerateControllerTest` (MockWebServer; includes nested `sql.prompt.version=vtest` case with `src/test/resources/prompts/vtest/`).
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Config keys, properties (redacted), client bean.
-- [ ] LlmClient + shared HF helpers; prompt templates v1.
-- [ ] Extractor + validation + endpoint + error mapping.
-- [ ] Tests: happy path, extraction variants, SQL_REJECTED with one call, parse error, request validation, template switch, token never logged.
-- [ ] `mvn verify`.
+- [x] Config keys, properties (redacted), client bean.
+- [x] LlmClient + shared HF helpers; prompt templates v1.
+- [x] Extractor + validation + endpoint + error mapping.
+- [x] Tests: happy path, extraction variants, SQL_REJECTED with one call, parse error, request validation, template switch, token never logged.
+- [x] `mvn verify`.
 
 **Acceptance Criteria:**
 - Given MockWebServer returning SQL in markdown fences, when I POST a valid prompt, then 200 with the FR-18 fields, `examples_used: []`, `valid: true`, `prompt_version`.
@@ -81,7 +81,9 @@ context:
 
 ## Spec Change Log
 
+- Extraction: unterminated SQL followed by prose was not trimmed; added clause-keyword continuation rule (a blank-line paragraph continues the statement only if it starts with FROM/WHERE/JOIN/...).
+
 ## Verification
 
 **Commands:**
-- `mvn -f sql-service/pom.xml verify` (JDK 21, Docker) -- result: pending
+- `mvn -f sql-service/pom.xml verify` (JDK 21, Docker) -- result: BUILD SUCCESS, 393 surefire + 73 failsafe tests green.

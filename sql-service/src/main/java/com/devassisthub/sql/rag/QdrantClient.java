@@ -111,6 +111,26 @@ public class QdrantClient {
                 .retrieve().toBodilessEntity();
     }
 
+    /** A search hit (Story 6.4). */
+    public record ScoredId(long id, double score) { }
+
+    /** Nearest points with score at or above {@code threshold}, best first; ids only (no payload, no vector). */
+    public java.util.List<ScoredId> search(float[] vector, int limit, double threshold) {
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("vector", vector);
+        body.put("limit", limit);
+        body.put("score_threshold", threshold);
+        body.put("with_payload", false);
+        body.put("with_vector", false);
+        JsonNode result = rest.post().uri("/collections/{name}/points/search", collection)
+                .body(body).retrieve().body(JsonNode.class).path("result");
+        java.util.List<ScoredId> hits = new java.util.ArrayList<>();
+        for (JsonNode p : result) {
+            hits.add(new ScoredId(p.path("id").asLong(), p.path("score").asDouble()));
+        }
+        return hits;
+    }
+
     /** The point's payload, or empty if no point has this id. */
     public Optional<JsonNode> getPointPayload(long id) {
         try {

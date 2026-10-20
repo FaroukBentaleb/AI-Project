@@ -1,0 +1,1 @@
+No schema is provided. Use conventional, descriptive snake_case table and column names.

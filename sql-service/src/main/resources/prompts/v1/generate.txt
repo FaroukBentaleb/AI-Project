@@ -7,7 +7,7 @@ Generate a SQL query to answer [QUESTION]{{prompt}}[/QUESTION]
 - If you cannot answer the question, return 'I do not know'.
 
 ### Database Schema
-No schema is provided. Use conventional, descriptive snake_case table and column names.
+{{schema}}
 
 ### Answer
 Given the database schema, here is the SQL query that [QUESTION]{{prompt}}[/QUESTION]

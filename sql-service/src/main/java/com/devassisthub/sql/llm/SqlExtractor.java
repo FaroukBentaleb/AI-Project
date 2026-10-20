@@ -18,6 +18,10 @@ public final class SqlExtractor {
     private static final Pattern START_MARK = Pattern.compile("(?i)\\[SQL]");
     private static final Pattern LINE_START = Pattern.compile("(?im)^[ \\t(]*(" + KEYWORDS + ")\\b");
     private static final Pattern PARAGRAPH_START = Pattern.compile("(?i)^[ \\t(]*(" + KEYWORDS + ")\\b");
+    /** Clause starts that may continue an unterminated statement after a blank line. */
+    private static final Pattern CONTINUATION = Pattern.compile("(?i)^[ \\t]*(FROM|WHERE|GROUP|ORDER|HAVING|LIMIT"
+            + "|OFFSET|FETCH|JOIN|LEFT|RIGHT|INNER|FULL|CROSS|NATURAL|UNION|INTERSECT|EXCEPT|AND|OR|ON|USING|WINDOW"
+            + "|RETURNING|FOR|AS|\\)|,|--|/\\*)");
     private static final Pattern INLINE_SELECT = Pattern.compile("(?i)\\bSELECT\\b");
     private static final Pattern BLANK_LINE = Pattern.compile("\\r?\\n[ \\t]*\\r?\\n");
 
@@ -53,14 +57,18 @@ public final class SqlExtractor {
         return s.isEmpty() ? Optional.empty() : Optional.of(s);
     }
 
-    /** After a {@code ;}-terminated paragraph, keep later paragraphs only if they start with an SQL keyword. */
+    /**
+     * Drops prose after the SQL: a later paragraph is kept only if it starts with a statement keyword, or (when the
+     * previous paragraph is not {@code ;}-terminated) with a clause keyword. Smuggled statements are kept.
+     */
     private static String dropTrailingProse(String s) {
         String[] paragraphs = BLANK_LINE.split(s);
         StringBuilder out = new StringBuilder(paragraphs[0]);
         boolean terminated = paragraphs[0].strip().endsWith(";");
         for (int i = 1; i < paragraphs.length; i++) {
             String p = paragraphs[i];
-            if (terminated && !PARAGRAPH_START.matcher(p).find()) {
+            boolean statement = PARAGRAPH_START.matcher(p).find();
+            if (!statement && (terminated || !CONTINUATION.matcher(p).find())) {
                 break;
             }
             out.append("\n\n").append(p);

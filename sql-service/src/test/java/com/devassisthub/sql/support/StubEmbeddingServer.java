@@ -19,6 +19,8 @@ public final class StubEmbeddingServer {
     private static final MockWebServer SERVER = new MockWebServer();
     private static volatile long delayMillis;
     private static volatile int failStatus;
+    /** Story 6.4: bodies containing one of these needles all get the same vector (score 1.0 against each other). */
+    private static final java.util.Set<String> PINS = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     static {
         SERVER.setDispatcher(new Dispatcher() {
@@ -28,7 +30,7 @@ public final class StubEmbeddingServer {
                     return new MockResponse().setResponseCode(failStatus);
                 }
                 MockResponse r = new MockResponse().setHeader("Content-Type", "application/json")
-                        .setBody(vector(request.getBody().readUtf8()));
+                        .setBody(vector(seed(request.getBody().readUtf8())));
                 return delayMillis > 0 ? r.setHeadersDelay(delayMillis, TimeUnit.MILLISECONDS) : r;
             }
         });
@@ -55,9 +57,24 @@ public final class StubEmbeddingServer {
         failStatus = status;
     }
 
+    /** Every embedded text containing {@code needle} gets one fixed vector, until {@link #reset()}. */
+    public static void pin(String needle) {
+        PINS.add(needle);
+    }
+
     public static void reset() {
         delayMillis = 0;
         failStatus = 0;
+        PINS.clear();
+    }
+
+    private static String seed(String body) {
+        for (String needle : PINS) {
+            if (body.contains(needle)) {
+                return "pin:" + needle;
+            }
+        }
+        return body;
     }
 
     private static String vector(String seed) {

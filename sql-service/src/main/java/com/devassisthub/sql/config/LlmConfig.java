@@ -1,6 +1,7 @@
 package com.devassisthub.sql.config;
 
 import com.devassisthub.sql.llm.LlmClient;
+import com.devassisthub.sql.llm.LlmHealthIndicator;
 import com.devassisthub.sql.llm.LlmProperties;
 import com.devassisthub.sql.llm.PromptTemplates;
 import java.net.http.HttpClient;
@@ -23,6 +24,12 @@ public class LlmConfig {
         factory.setReadTimeout(props.timeout());
         RestClient rest = RestClient.builder().baseUrl(props.baseUrl()).requestFactory(factory).build();
         return new LlmClient(rest, props);
+    }
+
+    /** Story 6.5: bean name {@code llmHealthIndicator} gives the contributor name {@code llm}. */
+    @Bean
+    public LlmHealthIndicator llmHealthIndicator(LlmClient llmClient) {
+        return new LlmHealthIndicator(llmClient);
     }
 
     @Bean

@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Page, QueryParams, SavedQuery, ValidateResponse } from './models';
+import { GenerateResponse, Page, QueryParams, SavedQuery, ValidateResponse } from './models';
 import { SQL_API_BASE } from './sql-api.config';
 import type { CreateQueryRequest, PatchQueryRequest } from '../save/save-form';
 
@@ -52,6 +52,11 @@ export class SqlApiService {
   /** FR12: structural read-only check; never executes or saves. 200 for accepted and rejected. */
   validate(sqlContent: string): Observable<ValidateResponse> {
     return this.http.post<ValidateResponse>(`${this.baseUrl}/validate`, { sql_content: sqlContent });
+  }
+
+  /** FR13: NL prompt → validated read-only SQL. Never saves or executes. */
+  generate(prompt: string): Observable<GenerateResponse> {
+    return this.http.post<GenerateResponse>(`${this.baseUrl}/generate`, { prompt });
   }
 
   /** FR8: one copy = one use. 204, empty body. */

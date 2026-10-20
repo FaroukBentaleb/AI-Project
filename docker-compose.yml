@@ -158,7 +158,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SQL_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SQL_DB_PASSWORD}
       HF_API_TOKEN: ${HF_API_TOKEN}
-      HF_MODEL: ${HF_MODEL}
+      # sql-service's own generation model, independent of the shared HF_MODEL used by the other services.
+      HF_MODEL: ${SQL_HF_MODEL:-defog/sqlcoder-7b-2}
       HF_EMBEDDING_MODEL: ${HF_EMBEDDING_MODEL}
       HF_RETRY_MAX_ATTEMPTS: 1
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}

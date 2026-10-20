@@ -2,6 +2,7 @@ package com.devassisthub.sql.config;
 
 import com.devassisthub.sql.rag.CollectionBootstrap;
 import com.devassisthub.sql.rag.EmbeddingClient;
+import com.devassisthub.sql.rag.ExampleRetriever;
 import com.devassisthub.sql.rag.EmbeddingProperties;
 import com.devassisthub.sql.rag.QdrantClient;
 import com.devassisthub.sql.rag.QdrantHealthIndicator;
@@ -54,6 +55,16 @@ public class QdrantConfig {
         factory.setReadTimeout(props.embeddingTimeout());
         RestClient rest = RestClient.builder().baseUrl(props.embeddingBaseUrl()).requestFactory(factory).build();
         return new EmbeddingClient(rest, props);
+    }
+
+    /** Story 6.4: Example retrieval for generation (FR-14/15/16), switchable with {@code sql.rag.enabled}. */
+    @Bean
+    public ExampleRetriever exampleRetriever(EmbeddingClient embedding, QdrantClient qdrant,
+                                             SavedQueryRepository repository,
+                                             @Value("${sql.rag.enabled:true}") boolean enabled,
+                                             @Value("${sql.rag.top-k:5}") int topK,
+                                             @Value("${sql.rag.threshold:0.5}") double threshold) {
+        return new ExampleRetriever(enabled, embedding, qdrant, repository, topK, threshold);
     }
 
     /** Story 5.4: Reconciliation, triggered by {@code CollectionReadyEvent} and {@code POST /api/sql/admin/reindex}. */

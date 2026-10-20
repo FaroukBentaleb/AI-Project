@@ -38,8 +38,9 @@ qdrant:
   timeout: 1s
   collection: sql_embeddings
   bootstrap-retry: ${QDRANT_BOOTSTRAP_RETRY:PT30S}  # ISO-8601: read by @Scheduled
+# Story 6.5: llm reports config + last-call status, no live calls. Both stay out of the root health (HealthGroupsConfig).
 management.endpoint.health.group.dependencies:
-  include: qdrant
+  include: qdrant,llm
   show-details: always
 # Story 5.4: rows / point ids handled per Reconciliation batch.
 sql.reconcile.batch-size: ${SQL_RECONCILE_BATCH_SIZE:100}
@@ -47,3 +48,16 @@ sql.reconcile.batch-size: ${SQL_RECONCILE_BATCH_SIZE:100}
 sql.seed.enabled: ${SQL_SEED_ENABLED:true}
 # Story 6.1 (FR-20): prompt templates under classpath:prompts/<version>/.
 sql.prompt.version: ${SQL_PROMPT_VERSION:v1}
+# Story 6.3 (FR-17): hard generation deadline, below the gateway's 15 s route timeout. LLM call 2 is skipped
+# when the remaining time cannot fit a full hf.timeout.
+sql.generation.deadline: ${SQL_GENERATION_DEADLINE:13s}
+# Story 6.4 (FR-14, FR-36): RAG grounding. Up to top-k Indexed Queries with cosine score >= threshold become
+# Examples. The threshold is a first estimate (OQ-7), tuned in the SM-3 baseline run.
+sql.rag.enabled: ${SQL_RAG_ENABLED:true}
+sql.rag.top-k: ${SQL_RAG_TOP_K:5}
+sql.rag.threshold: ${SQL_RAG_THRESHOLD:0.5}
+# Story 6.5 (addendum G): INFO by default; the NFR7 generation line is on the named logger "sql.generation",
+# which alone can be raised to DEBUG (SQL_GENERATION_LOG_LEVEL) for the demo.
+logging.level:
+  root: INFO
+  sql.generation: ${SQL_GENERATION_LOG_LEVEL:INFO}

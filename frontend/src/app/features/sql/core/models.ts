@@ -42,6 +42,25 @@ export interface ValidateResponse {
   safety_note: string;
 }
 
+/** A Saved Query injected as an Example (6.4). */
+export interface ExampleRef {
+  id: number;
+  title: string;
+}
+
+/** `POST /api/sql/generate` 200 response (FR-18). */
+export interface GenerateResponse {
+  sql: string;
+  dialect: string;
+  source: string;
+  original_prompt: string;
+  examples_used: ExampleRef[];
+  warnings: string[];
+  safety_note: string;
+  valid: boolean;
+  prompt_version: string;
+}
+
 export interface Page<T> {
   content: T[];
   page: number;

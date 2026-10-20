@@ -24,6 +24,8 @@ spring:
         - id: sql-service
           uri: lb://sql-service
           predicates: [Path=/api/sql/**]
+          metadata:
+            response-timeout: 15000   # ms; above sql-service's 13 s generation deadline. 22000 under Plan B
         - id: review-service
           uri: lb://review-service
           predicates: [Path=/api/reviews/**]

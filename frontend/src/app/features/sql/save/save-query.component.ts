@@ -141,6 +141,10 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
               <ng-container *ngTemplateOutlet="markerTpl; context: { $implicit: markers().sql_content }" />
             </div>
 
+            @if (!isEdit && draft().is_llm_generated && draft().original_nl_prompt; as p) {
+              <p class="original-prompt"><span class="label">Original prompt</span> <span class="original-prompt-text">“{{ p }}”</span></p>
+            }
+
             <button type="button" class="btn btn-ghost more-toggle" aria-controls="sql-save-more"
               [attr.aria-expanded]="moreOpen()" (click)="moreOpen.set(!moreOpen())">
               More options
@@ -248,6 +252,8 @@ export class SaveQueryComponent {
   /** Set once saved or discarded: leaving no longer asks. */
   private done = false;
   private escBeforeTab = false;
+  /** Where Cancel goes when there is no in-app history entry to go back to. */
+  private cancelFallback = '/sql/library';
   private pendingDiscard: ((leave: boolean) => void) | null = null;
 
   constructor() {
@@ -255,10 +261,13 @@ export class SaveQueryComponent {
       this.load();
     } else {
       // Save from Validate (EXPERIENCE.md prefill 2): the normalized SQL, handed over via session state.
+      // Save from Generate (prefill 1): the SQL, the original prompt, is_llm_generated = true.
+      // Manual after an outage (prefill 3): the prompt in Notes, More options expanded, is_llm_generated = false.
       const from = this.route.snapshot.queryParamMap.get('from');
+      this.cancelFallback = from === 'generate' || from === 'manual' ? '/sql/generate' : '/sql/library';
       const pending = inject(SqlSessionState, { optional: true })?.takePrefill(from);
       if (pending) {
-        this.prefill(pending);
+        this.prefill(pending, from === 'manual');
       }
     }
   }
@@ -390,7 +399,7 @@ export class SaveQueryComponent {
 
   /** Back to the previous in-app surface; otherwise Library (create) or the detail page (edit). Never leaves the app. */
   cancel(): void {
-    this.history.back(this.isEdit ? `/sql/queries/${this.id}` : '/sql/library');
+    this.history.back(this.isEdit ? `/sql/queries/${this.id}` : this.cancelFallback);
   }
 
   /** CanDeactivate: asks "Discard your changes?" when the form has unsaved edits. */

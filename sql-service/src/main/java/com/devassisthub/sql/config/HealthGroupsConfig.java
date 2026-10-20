@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Keeps external dependencies (members of the {@code dependencies} group: qdrant, later llm) out of the default
+ * Keeps external dependencies (members of the {@code dependencies} group: qdrant, llm) out of the default
  * {@code /actuator/health}, so a Qdrant outage degrades RAG without marking the service DOWN (PRD §7).
  */
 @Configuration

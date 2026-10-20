@@ -18,7 +18,7 @@ public abstract class AbstractIntegrationTest {
     public static final String QDRANT_IMAGE = "qdrant/qdrant:v1.13.2";
 
     public static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(POSTGRES_IMAGE);
-    protected static final QdrantContainer QDRANT = new QdrantContainer(QDRANT_IMAGE);
+    public static final QdrantContainer QDRANT = new QdrantContainer(QDRANT_IMAGE);
 
     static {
         POSTGRES.start();

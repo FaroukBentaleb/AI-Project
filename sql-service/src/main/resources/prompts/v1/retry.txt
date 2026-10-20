@@ -1,0 +1,18 @@
+### Task
+Generate a SQL query to answer [QUESTION]{{prompt}}[/QUESTION]
+
+### Instructions
+- Your previous answer could not be used because it did not contain one valid SQL statement.
+- Reply with exactly one read-only {{dialect}} SELECT statement (a WITH ... SELECT is allowed) and nothing else.
+- No explanation, no apology, no markdown: only the SQL.
+- Never write INSERT, UPDATE, DELETE, DDL, or more than one statement.
+
+### Previous answer (not usable)
+{{previous}}
+
+### Database Schema
+{{schema}}
+
+### Answer
+Given the database schema, here is the SQL query that [QUESTION]{{prompt}}[/QUESTION]
+[SQL]

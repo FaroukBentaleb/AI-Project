@@ -36,4 +36,13 @@ public final class HfHttp {
             return null;
         }
     }
+
+    /** Delta-seconds {@code Retry-After} header value (HTTP-date form ignored); null when absent or invalid. */
+    public static Integer retryAfterSeconds(String header) {
+        if (header == null || !header.strip().matches("\\d{1,6}")) {
+            return null;
+        }
+        int s = Integer.parseInt(header.strip());
+        return s > 0 ? s : null;
+    }
 }

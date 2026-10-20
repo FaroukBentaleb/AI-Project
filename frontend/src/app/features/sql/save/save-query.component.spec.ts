@@ -163,10 +163,10 @@ describe('SaveQueryComponent', () => {
     expect(toasts.current()).toEqual(jasmine.objectContaining({ kind: 'success', text: 'Saved · added to team examples' }));
   });
 
-  it('shows the not-indexed warning toast when warnings[] is non-empty', async () => {
+  it('shows the not-indexed warning toast when warnings[] carries the indexing Warning', async () => {
     fillRequired();
     submit();
-    backend.expectOne(`${api.baseUrl}/queries`).flush(saved({ warnings: ['RAG unavailable'] }), { status: 201, statusText: 'Created' });
+    backend.expectOne(`${api.baseUrl}/queries`).flush(saved({ warnings: ['Not yet indexed: team examples unavailable (Qdrant unreachable).'] }), { status: 201, statusText: 'Created' });
     await settle();
     expect(toasts.current()).toEqual(
       jasmine.objectContaining({ kind: 'warning', text: 'Saved · not yet indexed (team examples unavailable)' })

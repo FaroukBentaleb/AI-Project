@@ -55,15 +55,35 @@ describe('save-form', () => {
     });
   });
 
-  it('picks the toast from warnings[] first, then deprecated, then indexed', () => {
+  const NOT_INDEXED = 'Not yet indexed: team examples unavailable (embedding service unreachable).';
+  const VALIDATOR = "Function 'pg_sleep' can be slow or side-effecting.";
+
+  it('picks the toast from an indexing Warning first, then deprecated, then indexed', () => {
     const q = { warnings: [], deprecated: false } as unknown as SavedQuery;
     expect(mutationToast(q)).toEqual({ kind: 'success', text: 'Saved · added to team examples' });
-    expect(mutationToast({ ...q, warnings: ['RAG down'] })).toEqual({
+    expect(mutationToast({ ...q, warnings: [NOT_INDEXED] })).toEqual({
       kind: 'warning',
       text: 'Saved · not yet indexed (team examples unavailable)'
     });
     expect(mutationToast({ ...q, deprecated: true }).text).toBe('Saved');
     expect(mutationToast({ ...q, read_only: false } as SavedQuery).text).toBe('Saved');
-    expect(mutationToast({ ...q, deprecated: true, warnings: ['x'] }).kind).toBe('warning');
+    expect(mutationToast({ ...q, deprecated: true, warnings: [NOT_INDEXED] }).kind).toBe('warning');
+    expect(mutationToast({ ...q, warnings: [NOT_INDEXED] }, 'Undeprecated').text).toBe(
+      'Undeprecated · not yet indexed (team examples unavailable)'
+    );
+  });
+
+  it('does not treat validator Warnings as "not yet indexed"', () => {
+    const q = { warnings: [VALIDATOR], deprecated: false, read_only: true } as unknown as SavedQuery;
+    expect(mutationToast(q)).toEqual({ kind: 'warning', text: 'Saved · added to team examples · 1 read-only check warning' });
+    expect(mutationToast({ ...q, warnings: [VALIDATOR, 'Another'] }).text).toBe(
+      'Saved · added to team examples · 2 read-only check warnings'
+    );
+    expect(mutationToast({ ...q, read_only: false }).text).toBe('Saved · 1 read-only check warning');
+  });
+
+  it('lets the indexing Warning win over validator Warnings', () => {
+    const q = { warnings: [VALIDATOR, NOT_INDEXED], deprecated: false } as unknown as SavedQuery;
+    expect(mutationToast(q)).toEqual({ kind: 'warning', text: 'Saved · not yet indexed (team examples unavailable)' });
   });
 });
