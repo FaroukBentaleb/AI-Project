@@ -1,5 +1,6 @@
 package com.devassisthub.sql.llm;
 
+import com.devassisthub.sql.config.GroqProperties;
 import com.devassisthub.sql.llm.LlmResult.Cause;
 import com.devassisthub.sql.llm.LlmResult.Completed;
 import com.devassisthub.sql.llm.LlmResult.Failed;
@@ -30,6 +31,7 @@ public class LlmClient {
     private final ObjectMapper mapper = new ObjectMapper();
     /** Story 6.5: outcome of the most recent provider call, read by the {@code llm} health indicator. */
     private final AtomicReference<LastCall> lastCall = new AtomicReference<>();
+    private final GroqProperties groqProps;
 
     /** @param cause null when the provider answered with a completion */
     public record LastCall(Instant at, Cause cause) {
@@ -39,13 +41,14 @@ public class LlmClient {
     }
 
     /** {@code rest} must have base URL {@code hf.base-url} and the timeout configured. */
-    public LlmClient(RestClient rest, LlmProperties props) {
+    public LlmClient(RestClient rest, LlmProperties props, GroqProperties groqProps) {
         this.rest = rest;
         this.props = props;
+        this.groqProps = groqProps;
     }
 
     public boolean configured() {
-        return props.hasToken();
+        return groqProps.getApiKey() != null && !groqProps.getApiKey().isBlank();
     }
 
     /** Most recent call outcome, or null if no call has reached the provider path since startup. */
@@ -54,27 +57,31 @@ public class LlmClient {
     }
 
     public String model() {
-        return props.model();
+        return groqProps.getModel();
     }
 
     /** Per-call timeout ({@code hf.timeout}); the generation deadline guard needs it (Story 6.3). */
     public Duration timeout() {
-        return props.timeout();
+        return groqProps.getTimeout() != null ? groqProps.getTimeout() : props.timeout();
     }
 
     public LlmResult complete(String prompt) {
-        if (!props.hasToken()) {
-            return failed(Cause.NOT_CONFIGURED, "HF_API_TOKEN is not set", null);
+        if (groqProps.getApiKey() == null || groqProps.getApiKey().isBlank()) {
+            return failed(Cause.NOT_CONFIGURED, "GROQ_API_KEY is not set", null);
         }
         // do_sample=false is greedy decoding (temperature 0); TGI rejects an explicit temperature of 0.
-        Map<String, Object> body = Map.of("inputs", prompt,
-                "parameters", Map.of("max_new_tokens", props.maxNewTokens(), "do_sample", false,
-                        "return_full_text", false));
+        Map<String, Object> message = Map.of("role", "user", "content", prompt);
+        Map<String, Object> body = new java.util.HashMap<>(Map.of(
+                "model", groqProps.getModel(),
+                "messages", java.util.List.of(message),
+                "max_tokens", props.maxNewTokens()));
+        // Reasoning models (gpt-oss) otherwise spend the token budget thinking and get cut off before the SQL.
+        if (groqProps.getReasoningEffort() != null && !groqProps.getReasoningEffort().isBlank()) {
+            body.put("reasoning_effort", groqProps.getReasoningEffort());
+        }
         try {
             String reply = rest.post()
-                    // HF model ids are "org/name": keep the slash, encode each segment.
-                    .uri(b -> b.pathSegment(props.model().split("/")).build())
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + props.apiToken())
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + groqProps.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .body(body)
@@ -90,7 +97,7 @@ public class LlmClient {
                     e.getResponseHeaders() == null ? null : e.getResponseHeaders().getFirst(HttpHeaders.RETRY_AFTER));
         } catch (RuntimeException e) {
             if (HfHttp.isTimeout(e)) {
-                return failed(Cause.TIMEOUT, "no answer within " + props.timeout(), null);
+                return failed(Cause.TIMEOUT, "no answer within " + timeout(), null);
             }
             return failed(Cause.UNREACHABLE, e.getClass().getSimpleName(), null);
         }
@@ -107,14 +114,11 @@ public class LlmClient {
         } catch (IOException e) {
             return failed(Cause.MALFORMED_RESPONSE, "body is not JSON", null);
         }
-        if (node.isArray() && !node.isEmpty()) {
-            node = node.get(0);
+        JsonNode content = node.path("choices").path(0).path("message").path("content");
+        if (!content.isTextual()) {
+            return failed(Cause.MALFORMED_RESPONSE, "no choices[0].message.content in reply", null);
         }
-        JsonNode text = node.path("generated_text");
-        if (!text.isTextual()) {
-            return failed(Cause.MALFORMED_RESPONSE, "no generated_text in reply", null);
-        }
-        return new Completed(text.asText());
+        return new Completed(content.asText());
     }
 
     /**

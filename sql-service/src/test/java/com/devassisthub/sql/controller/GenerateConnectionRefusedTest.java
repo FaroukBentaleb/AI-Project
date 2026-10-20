@@ -34,8 +34,8 @@ class GenerateConnectionRefusedTest {
             port = s.getLocalPort(); // closed again before the request: connection refused
         }
         String url = "http://127.0.0.1:" + port + "/models";
-        r.add("hf.api-token", () -> "hf_test_token_refused");
-        r.add("hf.base-url", () -> url);
+        r.add("groq.api-key", () -> "hf_test_token_refused");
+        r.add("groq.base-url", () -> url);
     }
 
     @Autowired MockMvc mvc;

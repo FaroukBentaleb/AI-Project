@@ -61,8 +61,8 @@ class GenerateRagIT extends AbstractIntegrationTest {
 
     @DynamicPropertySource
     static void llm(DynamicPropertyRegistry r) {
-        r.add("hf.base-url", () -> LLM.url("/models").toString());
-        r.add("hf.timeout", () -> "2s");
+        r.add("groq.base-url", () -> LLM.url("/models").toString());
+        r.add("groq.timeout", () -> "2s");
     }
 
     @Autowired ObjectMapper mapper;
@@ -106,7 +106,7 @@ class GenerateRagIT extends AbstractIntegrationTest {
 
     private static void reply(String text) throws IOException {
         LLM.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setBody(new ObjectMapper().writeValueAsString(new Object[] {Map.of("generated_text", text)})));
+                .setBody(new ObjectMapper().writeValueAsString(Map.of("choices", java.util.List.of(Map.of("message", Map.of("content", text)))))));
     }
 
     private JsonNode generate(String prompt) throws Exception {
@@ -116,7 +116,7 @@ class GenerateRagIT extends AbstractIntegrationTest {
     private String llmPrompt() throws Exception {
         RecordedRequest req = LLM.takeRequest(5, TimeUnit.SECONDS);
         assertThat(req).isNotNull();
-        return mapper.readTree(req.getBody().readUtf8()).path("inputs").asText();
+        return mapper.readTree(req.getBody().readUtf8()).at("/messages/0/content").asText();
     }
 
     private static List<Long> ids(JsonNode used) {

@@ -6,6 +6,7 @@ import com.devassisthub.sql.rag.EmbeddingResult.Embedded;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 /**
- * Dedicated Hugging Face feature-extraction client (Story 5.2). One attempt, no retries, timeout
+ * Embedding client for an OpenAI-compatible {@code /v1/embeddings} endpoint (Jina; Story 5.2). One attempt, no retries, timeout
  * {@code hf.embedding-timeout}. Every failure becomes {@link EmbeddingResult.Unavailable}; the token is never logged.
  */
 public class EmbeddingClient {
@@ -38,20 +39,18 @@ public class EmbeddingClient {
 
     public EmbeddingResult embed(String text) {
         if (!props.hasToken() || !props.hasModel()) {
-            return unavailable(Cause.NOT_CONFIGURED, "HF_API_TOKEN or HF_EMBEDDING_MODEL is not set");
+            return unavailable(Cause.NOT_CONFIGURED, "JINA_API_KEY or HF_EMBEDDING_MODEL is not set");
         }
         if (text == null || text.isBlank()) {
             return EmbeddingResult.unavailable(Cause.EMPTY_INPUT, "nothing to embed");
         }
         try {
             String body = rest.post()
-                    // HF model ids are "org/name": keep the slash, encode each segment.
-                    .uri(b -> b.pathSegment(props.embeddingModel().strip().split("/"))
-                            .pathSegment("pipeline", "feature-extraction").build())
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + props.apiToken())
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + props.embeddingApiToken())
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
-                    .body(Map.of("inputs", text))
+                    .body(Map.of("model", props.embeddingModel().strip(), "input", List.of(text),
+                            "dimensions", props.embeddingDimension()))
                     .retrieve()
                     .body(String.class);
             return parse(body);
@@ -74,6 +73,10 @@ public class EmbeddingClient {
             node = mapper.readTree(body);
         } catch (IOException e) {
             return unavailable(Cause.MALFORMED_RESPONSE, "body is not JSON");
+        }
+        // OpenAI-compatible answer: {"data":[{"embedding":[f, ...]}]}.
+        if (node.has("data")) {
+            node = node.path("data").path(0).path("embedding");
         }
         // Sentence-transformers answer [f, ...]; some providers wrap a single input as [[f, ...]].
         if (node.isArray() && node.size() == 1 && node.get(0).isArray()) {

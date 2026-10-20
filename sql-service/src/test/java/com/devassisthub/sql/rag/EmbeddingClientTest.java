@@ -79,10 +79,17 @@ class EmbeddingClientTest {
         assertThat(v[1]).isEqualTo(0.001f);
         RecordedRequest req = server.takeRequest(1, TimeUnit.SECONDS);
         assertThat(req.getMethod()).isEqualTo("POST");
-        assertThat(req.getPath())
-                .isEqualTo("/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction");
+        assertThat(req.getPath()).isEqualTo("/hf-inference/models");
         assertThat(req.getHeader("Authorization")).isEqualTo("Bearer " + TOKEN);
-        assertThat(req.getBody().readUtf8()).isEqualTo("{\"inputs\":\"monthly revenue by region\"}");
+        assertThat(req.getBody().readUtf8()).contains("\"input\":[\"monthly revenue by region\"]",
+                "\"model\":\"sentence-transformers/all-MiniLM-L6-v2\"", "\"dimensions\":384");
+    }
+
+    @Test
+    void openAiStyleDataEnvelopeIsAccepted() {
+        server.enqueue(json(200, "{\"data\":[{\"embedding\":" + vector(DIM) + "}]}"));
+
+        assertThat(client().embed("x")).isInstanceOf(Embedded.class);
     }
 
     @Test

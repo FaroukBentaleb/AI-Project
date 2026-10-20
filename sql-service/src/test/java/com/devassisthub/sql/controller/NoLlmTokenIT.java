@@ -35,9 +35,9 @@ class NoLlmTokenIT {
         r.add("qdrant.port", () -> AbstractIntegrationTest.QDRANT.getMappedPort(6334));
         r.add("qdrant.rest-port", () -> AbstractIntegrationTest.QDRANT.getMappedPort(6333));
         r.add("hf.embedding-base-url", StubEmbeddingServer::baseUrl);
-        r.add("hf.api-token", () -> "");
+        r.add("groq.api-key", () -> "");
         // Closed port: if anything did call out, it would surface as LLM_UNAVAILABLE and fail the test.
-        r.add("hf.base-url", () -> "http://127.0.0.1:9/models");
+        r.add("groq.base-url", () -> "http://127.0.0.1:9/models");
     }
 
     @Autowired TestRestTemplate rest;

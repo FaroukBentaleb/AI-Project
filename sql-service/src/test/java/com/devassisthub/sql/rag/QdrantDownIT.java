@@ -48,7 +48,7 @@ class QdrantDownIT {
         registry.add("qdrant.host", () -> "localhost");
         registry.add("qdrant.rest-port", () -> LATE_PORT);
         // Never reach the real Hugging Face API from tests: embed through the shared stub (Story 5.4 reconciles).
-        registry.add("hf.api-token", () -> "test-token");
+        registry.add("hf.embedding-api-token", () -> "test-token");
         registry.add("hf.embedding-model", () -> "test/stub-model");
         registry.add("hf.embedding-base-url", com.devassisthub.sql.support.StubEmbeddingServer::baseUrl);
     }

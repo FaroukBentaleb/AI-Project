@@ -60,9 +60,9 @@ class GenerateRetryTest {
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
-        r.add("hf.api-token", () -> "hf_test_retry_token");
-        r.add("hf.timeout", () -> "1s");
-        r.add("hf.base-url", () -> SERVER.url("/models").toString());
+        r.add("groq.api-key", () -> "hf_test_retry_token");
+        r.add("groq.timeout", () -> "1s");
+        r.add("groq.base-url", () -> SERVER.url("/models").toString());
     }
 
     @Autowired MockMvc mvc;
@@ -76,7 +76,7 @@ class GenerateRetryTest {
 
     static MockResponse text(String generatedText) throws IOException {
         return new MockResponse().setHeader("Content-Type", "application/json")
-                .setBody(JSON.writeValueAsString(new Object[] {Map.of("generated_text", generatedText)}));
+                .setBody(JSON.writeValueAsString(Map.of("choices", java.util.List.of(Map.of("message", Map.of("content", generatedText))))));
     }
 
     static void reply(String generatedText) throws IOException {
@@ -89,7 +89,7 @@ class GenerateRetryTest {
     }
 
     static String inputs(RecordedRequest req) throws IOException {
-        return (String) JSON.readValue(req.getBody().readUtf8(), Map.class).get("inputs");
+        return (String) JSON.readTree(req.getBody().readUtf8()).at("/messages/0/content").asText();
     }
 
     static void assertCalls(int n) throws InterruptedException {

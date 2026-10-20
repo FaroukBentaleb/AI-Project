@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({GlobalExceptionHandler.class, ValidatorConfig.class, LlmConfig.class, GenerationService.class,
         com.devassisthub.sql.support.RagOffTestConfig.class})
 // Port 9 (discard) is closed: an outbound call would surface as LLM_UNAVAILABLE, not LLM_NOT_CONFIGURED.
-@TestPropertySource(properties = {"hf.api-token=", "hf.base-url=http://127.0.0.1:9/models"})
+@TestPropertySource(properties = {"groq.api-key=", "groq.base-url=http://127.0.0.1:9/models"})
 class GenerateNoTokenTest {
 
     @Autowired MockMvc mvc;

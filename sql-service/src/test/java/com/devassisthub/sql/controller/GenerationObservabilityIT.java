@@ -53,8 +53,8 @@ class GenerationObservabilityIT extends AbstractIntegrationTest {
 
     @DynamicPropertySource
     static void llm(DynamicPropertyRegistry r) {
-        r.add("hf.base-url", () -> LLM.url("/models").toString());
-        r.add("hf.timeout", () -> "2s");
+        r.add("groq.base-url", () -> LLM.url("/models").toString());
+        r.add("groq.timeout", () -> "2s");
     }
 
     @Autowired ObjectMapper mapper;
@@ -102,7 +102,7 @@ class GenerationObservabilityIT extends AbstractIntegrationTest {
         assertThat(mapper.readTree(deps.body()).path("components").has("qdrant")).isTrue();
 
         LLM.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setBody(mapper.writeValueAsString(new Object[] {Map.of("generated_text", "SELECT 1")})));
+                .setBody(mapper.writeValueAsString(Map.of("choices", java.util.List.of(Map.of("message", Map.of("content", "SELECT 1")))))));
         HttpResponse<String> ok = send("POST", "/api/sql/generate",
                 mapper.writeValueAsString(Map.of("prompt", secretPrompt)));
         assertThat(ok.statusCode()).as(ok.body()).isEqualTo(200);

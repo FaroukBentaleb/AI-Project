@@ -1,8 +1,10 @@
 server.port: ${SERVER_PORT:8084}
 spring.application.name: sql-service
-spring.datasource.url: ${SPRING_DATASOURCE_URL}
-spring.datasource.username: ${SPRING_DATASOURCE_USERNAME}
-spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD}
+# Local runs (IntelliJ / mvn spring-boot:run) read the AI keys from the git-ignored sql-service/.env.local; Docker passes env vars.
+spring.config.import: optional:file:.env.local[.properties],optional:file:sql-service/.env.local[.properties]
+spring.datasource.url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sql_db}
+spring.datasource.username: ${SPRING_DATASOURCE_USERNAME:devassist}
+spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD:postgres}
 spring.jpa.hibernate.ddl-auto: validate
 spring.jackson.property-naming-strategy: SNAKE_CASE
 spring.flyway.enabled: true
@@ -18,19 +20,20 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
 hf.api-token: ${HF_API_TOKEN:}
 # Story 6.1: generation model (sqlcoder completion format; a blank HF_MODEL also falls back to this default).
-hf.model: ${HF_MODEL:defog/sqlcoder-7b-2}
+hf.model: ${HF_MODEL:Qwen/Qwen3-4B}
 hf.timeout: ${HF_TIMEOUT:5s}
 # One transport attempt: the LLM client never retries (FR-17).
 hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:1}
 # HF Inference Providers text-generation; the client appends /{org}/{name}.
 hf.base-url: ${HF_BASE_URL:https://router.huggingface.co/hf-inference/models}
-hf.max-new-tokens: ${HF_MAX_NEW_TOKENS:400}
-hf.embedding-model: ${HF_EMBEDDING_MODEL:}
-# OQ-1/OQ-3 open: must match the embedding model; 384 = MiniLM-class, same as commit-service.
+hf.max-new-tokens: ${HF_MAX_NEW_TOKENS:1024}
+hf.embedding-model: ${HF_EMBEDDING_MODEL:jina-embeddings-v5-omni-small}
+hf.embedding-api-token: ${JINA_API_KEY:}
+# Sent to Jina as "dimensions"; 384 matches the existing Qdrant collection.
 hf.embedding-dimension: ${HF_EMBEDDING_DIMENSION:384}
 hf.embedding-timeout: ${HF_EMBEDDING_TIMEOUT:2s}
-# HF Inference Providers (serverless); the client appends /{model}/pipeline/feature-extraction.
-hf.embedding-base-url: ${HF_EMBEDDING_BASE_URL:https://router.huggingface.co/hf-inference/models}
+# OpenAI-compatible embeddings endpoint (Jina); the client POSTs to it as-is.
+hf.embedding-base-url: ${HF_EMBEDDING_BASE_URL:https://api.jina.ai/v1/embeddings}
 qdrant:
   host: ${QDRANT_HOST:localhost}
   port: ${QDRANT_PORT:6334}
@@ -61,3 +64,11 @@ sql.rag.threshold: ${SQL_RAG_THRESHOLD:0.5}
 logging.level:
   root: INFO
   sql.generation: ${SQL_GENERATION_LOG_LEVEL:INFO}
+
+
+groq.api-key: ${GROQ_API_KEY:}
+groq.base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1/chat/completions}
+groq.model: ${GROQ_MODEL:openai/gpt-oss-20b}
+groq.timeout: ${GROQ_TIMEOUT:8s}
+# gpt-oss is a reasoning model: "low" keeps thinking from eating max-new-tokens. Blank for non-reasoning models.
+groq.reasoning-effort: ${GROQ_REASONING_EFFORT:low}

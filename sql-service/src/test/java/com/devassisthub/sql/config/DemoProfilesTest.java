@@ -28,7 +28,7 @@ class DemoProfilesTest {
         SpringApplication app = new SpringApplication(Props.class);
         app.setWebApplicationType(WebApplicationType.NONE);
         app.setAdditionalProfiles(profiles);
-        return app.run("--spring.main.banner-mode=off", "--hf.api-token=t");
+        return app.run("--spring.main.banner-mode=off", "--groq.api-key=t");
     }
 
     private static Duration deadline(ConfigurableApplicationContext ctx) {
@@ -82,7 +82,12 @@ class DemoProfilesTest {
     @Test
     void deadHostGivesLlmUnavailableNotNotConfigured() {
         LlmProperties props = new LlmProperties("t", null, Duration.ofSeconds(2), "https://router.example", 0);
-        LlmClient client = new LlmConfig().llmClient(props, true);
+        GroqProperties groqProps = new GroqProperties();
+        groqProps.setApiKey("test-key");
+        groqProps.setBaseUrl("https://api.groq.com/openai/v1/chat/completions");
+        groqProps.setModel("llama-3.1-8b-instant");
+        groqProps.setTimeout(Duration.ofSeconds(8));
+        LlmClient client = new LlmConfig().llmClient(props, groqProps, true);
         assertThat(client.configured()).isTrue();
         LlmResult result = client.complete("[QUESTION]orders[/QUESTION]");
         assertThat(result).isInstanceOf(LlmResult.Failed.class);

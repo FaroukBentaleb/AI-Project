@@ -161,6 +161,9 @@ services:
       # sql-service's own generation model, independent of the shared HF_MODEL used by the other services.
       HF_MODEL: ${SQL_HF_MODEL:-defog/sqlcoder-7b-2}
       HF_EMBEDDING_MODEL: ${HF_EMBEDDING_MODEL}
+      JINA_API_KEY: ${JINA_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
       HF_RETRY_MAX_ATTEMPTS: 1
       # Story 8.2: demo profile (INFO logs, LLM-down switch SQL_DEMO_LLM_DEAD_HOST). Plan B: docker-compose.planb.yml.
       SPRING_PROFILES_ACTIVE: ${SQL_SPRING_PROFILES:-demo}
