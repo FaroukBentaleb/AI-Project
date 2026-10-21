@@ -1,0 +1,183 @@
+[
+  {
+    "seed_key": "weekly_region_orders",
+    "title": "Weekly orders by region",
+    "description": "Number of orders and revenue per region for last week (Monday to Sunday), excluding cancelled orders. Uses the team's standard 'last week' filter on orders.created_at.",
+    "sql_content": "SELECT o.region,\n       COUNT(*) AS order_count,\n       SUM(o.total) AS revenue\nFROM orders o\nWHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\n  AND o.status <> 'cancelled'\nGROUP BY o.region\nORDER BY revenue DESC",
+    "tags": [
+      "orders",
+      "region",
+      "weekly",
+      "revenue"
+    ]
+  },
+  {
+    "seed_key": "region_orders_wow_union",
+    "title": "Orders per region: last week vs the week before (UNION ALL)",
+    "description": "Week-over-week order counts per region, one row per region and week, built with UNION ALL over the two standard week windows.",
+    "sql_content": "SELECT 'last_week' AS period, o.region, COUNT(*) AS order_count\nFROM orders o\nWHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\nGROUP BY o.region\nUNION ALL\nSELECT 'previous_week' AS period, o.region, COUNT(*) AS order_count\nFROM orders o\nWHERE o.created_at >= date_trunc('week', now()) - interval '2 weeks'\n  AND o.created_at < date_trunc('week', now()) - interval '1 week'\nGROUP BY o.region\nORDER BY region, period",
+    "tags": [
+      "orders",
+      "region",
+      "week-over-week",
+      "union"
+    ]
+  },
+  {
+    "seed_key": "region_orders_wow_cte",
+    "title": "Orders per region: week-over-week change (CTE)",
+    "description": "Last week's order count per region next to the previous week's, with the absolute and percentage change. CTE variant of the week-over-week comparison.",
+    "sql_content": "WITH last_week AS (\n  SELECT o.region, COUNT(*) AS order_count\n  FROM orders o\n  WHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\n  GROUP BY o.region\n), previous_week AS (\n  SELECT o.region, COUNT(*) AS order_count\n  FROM orders o\n  WHERE o.created_at >= date_trunc('week', now()) - interval '2 weeks'\n  AND o.created_at < date_trunc('week', now()) - interval '1 week'\n  GROUP BY o.region\n)\nSELECT COALESCE(l.region, p.region) AS region,\n       COALESCE(l.order_count, 0) AS last_week,\n       COALESCE(p.order_count, 0) AS previous_week,\n       COALESCE(l.order_count, 0) - COALESCE(p.order_count, 0) AS change,\n       ROUND(100.0 * (COALESCE(l.order_count, 0) - COALESCE(p.order_count, 0))\n             / NULLIF(p.order_count, 0), 1) AS change_pct\nFROM last_week l\nFULL OUTER JOIN previous_week p ON p.region = l.region\nORDER BY region",
+    "tags": [
+      "orders",
+      "region",
+      "week-over-week",
+      "cte"
+    ]
+  },
+  {
+    "seed_key": "top_customers_revenue",
+    "title": "Top 10 customers by revenue",
+    "description": "The ten customers with the highest lifetime revenue from non-cancelled orders, with their order count.",
+    "sql_content": "SELECT c.id, c.name, c.country,\n       COUNT(o.id) AS order_count,\n       SUM(o.total) AS revenue\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\nWHERE o.status <> 'cancelled'\nGROUP BY c.id, c.name, c.country\nORDER BY revenue DESC\nLIMIT 10",
+    "tags": [
+      "customers",
+      "orders",
+      "revenue",
+      "top-n"
+    ]
+  },
+  {
+    "seed_key": "sales_by_category",
+    "title": "Sales by product category",
+    "description": "Units sold and revenue per product category from order line items, excluding cancelled orders.",
+    "sql_content": "SELECT p.category,\n       SUM(oi.quantity) AS units_sold,\n       SUM(oi.quantity * oi.unit_price) AS revenue\nFROM order_items oi\nJOIN products p ON p.id = oi.product_id\nJOIN orders o ON o.id = oi.order_id\nWHERE o.status <> 'cancelled'\nGROUP BY p.category\nORDER BY revenue DESC",
+    "tags": [
+      "products",
+      "order_items",
+      "category",
+      "revenue"
+    ]
+  },
+  {
+    "seed_key": "avg_order_value_month",
+    "title": "Average order value per month",
+    "description": "Average order total and order count per calendar month over the last 12 months, excluding cancelled orders.",
+    "sql_content": "SELECT date_trunc('month', o.created_at) AS month,\n       COUNT(*) AS order_count,\n       ROUND(AVG(o.total), 2) AS avg_order_value\nFROM orders o\nWHERE o.created_at >= date_trunc('month', now()) - interval '12 months'\n  AND o.status <> 'cancelled'\nGROUP BY date_trunc('month', o.created_at)\nORDER BY month",
+    "tags": [
+      "orders",
+      "monthly",
+      "average",
+      "revenue"
+    ]
+  },
+  {
+    "seed_key": "inactive_customers",
+    "title": "Inactive customers (no order in 90 days)",
+    "description": "Customers who have not placed any order in the last 90 days, including those who never ordered, with their last order date.",
+    "sql_content": "SELECT c.id, c.name, c.country, MAX(o.created_at) AS last_order_at\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id\nGROUP BY c.id, c.name, c.country\nHAVING MAX(o.created_at) IS NULL\n    OR MAX(o.created_at) < now() - interval '90 days'\nORDER BY last_order_at NULLS FIRST, c.id",
+    "tags": [
+      "customers",
+      "orders",
+      "churn",
+      "retention"
+    ]
+  },
+  {
+    "seed_key": "customer_rank_per_region",
+    "title": "Customer revenue rank within each region",
+    "description": "Ranks customers by revenue inside each region with a window function and keeps the top 3 per region.",
+    "sql_content": "WITH revenue AS (\n  SELECT o.region, o.customer_id, SUM(o.total) AS revenue\n  FROM orders o\n  WHERE o.status <> 'cancelled'\n  GROUP BY o.region, o.customer_id\n), ranked AS (\n  SELECT r.region, r.customer_id, r.revenue,\n         RANK() OVER (PARTITION BY r.region ORDER BY r.revenue DESC) AS revenue_rank\n  FROM revenue r\n)\nSELECT ranked.region, c.name, ranked.revenue, ranked.revenue_rank\nFROM ranked\nJOIN customers c ON c.id = ranked.customer_id\nWHERE ranked.revenue_rank <= 3\nORDER BY ranked.region, ranked.revenue_rank",
+    "tags": [
+      "customers",
+      "region",
+      "window-function",
+      "ranking"
+    ]
+  },
+  {
+    "seed_key": "order_status_breakdown_week",
+    "title": "Order status breakdown per region last week",
+    "description": "Counts of paid, shipped, delivered and cancelled orders per region for last week, using aggregate FILTER (WHERE ...) clauses.",
+    "sql_content": "SELECT o.region,\n       COUNT(*) FILTER (WHERE o.status = 'paid') AS paid,\n       COUNT(*) FILTER (WHERE o.status = 'shipped') AS shipped,\n       COUNT(*) FILTER (WHERE o.status = 'delivered') AS delivered,\n       COUNT(*) FILTER (WHERE o.status = 'cancelled') AS cancelled\nFROM orders o\nWHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\nGROUP BY o.region\nORDER BY o.region",
+    "tags": [
+      "orders",
+      "region",
+      "status",
+      "weekly",
+      "filter"
+    ]
+  },
+  {
+    "seed_key": "daily_revenue_running_total",
+    "title": "Daily revenue with running total last week",
+    "description": "Revenue per day for last week with a cumulative running total computed by a window function.",
+    "sql_content": "SELECT date_trunc('day', o.created_at) AS day,\n       SUM(o.total) AS revenue,\n       SUM(SUM(o.total)) OVER (ORDER BY date_trunc('day', o.created_at)) AS running_total\nFROM orders o\nWHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\n  AND o.status <> 'cancelled'\nGROUP BY date_trunc('day', o.created_at)\nORDER BY day",
+    "tags": [
+      "orders",
+      "daily",
+      "window-function",
+      "revenue"
+    ]
+  },
+  {
+    "seed_key": "top_products_last_week",
+    "title": "Best-selling products last week",
+    "description": "Top 5 products by units sold last week, with revenue, joining order_items to orders and products.",
+    "sql_content": "SELECT p.name, p.category,\n       SUM(oi.quantity) AS units_sold,\n       SUM(oi.quantity * oi.unit_price) AS revenue\nFROM order_items oi\nJOIN orders o ON o.id = oi.order_id\nJOIN products p ON p.id = oi.product_id\nWHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\n  AND o.status <> 'cancelled'\nGROUP BY p.id, p.name, p.category\nORDER BY units_sold DESC\nLIMIT 5",
+    "tags": [
+      "products",
+      "order_items",
+      "weekly",
+      "top-n"
+    ]
+  },
+  {
+    "seed_key": "latest_order_per_customer",
+    "title": "Most recent order of each customer",
+    "description": "One row per customer with their latest order (date, region, total), using DISTINCT ON.",
+    "sql_content": "SELECT DISTINCT ON (o.customer_id)\n       o.customer_id, c.name, o.id AS order_id, o.region, o.total, o.created_at\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nORDER BY o.customer_id, o.created_at DESC",
+    "tags": [
+      "customers",
+      "orders",
+      "distinct-on",
+      "latest"
+    ]
+  },
+  {
+    "seed_key": "new_customers_per_month",
+    "title": "New customers per month by country",
+    "description": "Number of customers who signed up each month over the last 12 months, split by country.",
+    "sql_content": "SELECT date_trunc('month', c.created_at) AS month,\n       c.country,\n       COUNT(*) AS new_customers\nFROM customers c\nWHERE c.created_at >= date_trunc('month', now()) - interval '12 months'\nGROUP BY date_trunc('month', c.created_at), c.country\nORDER BY month, c.country",
+    "tags": [
+      "customers",
+      "monthly",
+      "country",
+      "growth"
+    ]
+  },
+  {
+    "seed_key": "cancellation_rate_region",
+    "title": "Cancellation rate per region (last 30 days)",
+    "description": "Share of cancelled orders per region over the last 30 days, computed with FILTER (WHERE ...) and NULLIF to avoid division by zero.",
+    "sql_content": "SELECT o.region,\n       COUNT(*) AS order_count,\n       COUNT(*) FILTER (WHERE o.status = 'cancelled') AS cancelled,\n       ROUND(100.0 * COUNT(*) FILTER (WHERE o.status = 'cancelled') / NULLIF(COUNT(*), 0), 1) AS cancellation_pct\nFROM orders o\nWHERE o.created_at >= now() - interval '30 days'\nGROUP BY o.region\nORDER BY cancellation_pct DESC",
+    "tags": [
+      "orders",
+      "region",
+      "cancellation",
+      "filter"
+    ]
+  },
+  {
+    "seed_key": "repeat_customers_last_week",
+    "title": "Repeat customers last week",
+    "description": "Customers who placed more than one order last week, with their order count and spend.",
+    "sql_content": "SELECT c.id, c.name,\n       COUNT(o.id) AS order_count,\n       SUM(o.total) AS spend\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nWHERE o.created_at >= date_trunc('week', now()) - interval '1 week'\n  AND o.created_at < date_trunc('week', now())\nGROUP BY c.id, c.name\nHAVING COUNT(o.id) > 1\nORDER BY order_count DESC, spend DESC",
+    "tags": [
+      "customers",
+      "orders",
+      "weekly",
+      "loyalty"
+    ]
+  }
+]

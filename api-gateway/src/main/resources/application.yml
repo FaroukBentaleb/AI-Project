@@ -24,6 +24,9 @@ spring:
         - id: sql-service
           uri: lb://sql-service
           predicates: [Path=/api/sql/**]
+          metadata:
+            # ms; above sql-service's 13 s generation deadline. Plan B (docker-compose.planb.yml) sets 22000.
+            response-timeout: ${SQL_ROUTE_RESPONSE_TIMEOUT_MS:15000}
         - id: review-service
           uri: lb://review-service
           predicates: [Path=/api/reviews/**]

@@ -13,13 +13,51 @@
             "outputPath": "dist/devassist-hub",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json"
-          }
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "optimization": true
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
         },
-        "serve": {"builder": "@angular-devkit/build-angular:dev-server", "configurations": {"production": {"buildTarget": "devassist-hub:build:production"}, "development": {"buildTarget": "devassist-hub:build:development"}}, "defaultConfiguration": "development"}
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "devassist-hub:build:production"
+            },
+            "development": {
+              "buildTarget": "devassist-hub:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
+            "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js"
+          }
+        }
       }
     }
   },
-  "cli": {"analytics": false}
+  "cli": {
+    "analytics": false
+  }
 }

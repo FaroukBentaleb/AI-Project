@@ -70,6 +70,8 @@ Each service also provides:
 
 The commit service additionally owns the Qdrant integration for the
 `commit_embeddings` collection, using 384-dimensional cosine vectors.
+The SQL service owns its own `sql_embeddings` collection in the same Qdrant (cosine, size from
+`HF_EMBEDDING_DIMENSION`, default 384) and never touches other collections.
 
 ## Definition of done
 

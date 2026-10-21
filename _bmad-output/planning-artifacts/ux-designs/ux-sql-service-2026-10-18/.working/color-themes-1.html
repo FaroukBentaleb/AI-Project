@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevAssist Hub · SQL module — color themes (round 1)</title>
+<style>
+  /* ===== 1 · Graphite =====
+     bg              #0d1117
+     surface         #161b22
+     surface-raised  #21262d
+     border          #30363d
+     text-primary    #e6edf3
+     text-muted      #9198a1
+     accent          #4493f8
+     accent-text     #0d1117
+     success         #3fb950
+     danger          #f85149
+     warning         #d29922
+     info            #ab7df8
+     neutral-badge   #9198a1
+     code-bg         #0d1117
+     keyword         #ff7b72
+     identifier      #e6edf3
+     string          #a5d6ff
+     number          #79c0ff
+     function        #d2a8ff
+     comment         #8b949e
+  */
+  .t-graphite{--bg:#0d1117;--surface:#161b22;--surface-raised:#21262d;--border:#30363d;--text-primary:#e6edf3;--text-muted:#9198a1;--accent:#4493f8;--accent-text:#0d1117;--success:#3fb950;--danger:#f85149;--warning:#d29922;--info:#ab7df8;--neutral-badge:#9198a1;--code-bg:#0d1117;--keyword:#ff7b72;--identifier:#e6edf3;--string:#a5d6ff;--number:#79c0ff;--function:#d2a8ff;--comment:#8b949e;--success-tint:rgba(63,185,80,0.14);--success-line:rgba(63,185,80,0.4);--danger-tint:rgba(248,81,73,0.14);--danger-line:rgba(248,81,73,0.4);--warning-tint:rgba(210,153,34,0.14);--warning-line:rgba(210,153,34,0.4);--info-tint:rgba(171,125,248,0.14);--info-line:rgba(171,125,248,0.4);--neutral-badge-tint:rgba(145,152,161,0.14);--neutral-badge-line:rgba(145,152,161,0.4);--accent-tint:rgba(68,147,248,0.14);--accent-line:rgba(68,147,248,0.4)}
+  /* ===== 2 · Obsidian Emerald =====
+     bg              #121212
+     surface         #1a1a1a
+     surface-raised  #242424
+     border          #2e2e2e
+     text-primary    #ededed
+     text-muted      #a1a1a1
+     accent          #3ecf8e
+     accent-text     #052e1c
+     success         #7ee2b8
+     danger          #ff6369
+     warning         #f5a524
+     info            #9ba7ff
+     neutral-badge   #a1a1a1
+     code-bg         #0f0f0f
+     keyword         #c4a5ff
+     identifier      #ededed
+     string          #ffcda1
+     number          #7ee2b8
+     function        #8cc8ff
+     comment         #8a8a8a
+  */
+  .t-emerald{--bg:#121212;--surface:#1a1a1a;--surface-raised:#242424;--border:#2e2e2e;--text-primary:#ededed;--text-muted:#a1a1a1;--accent:#3ecf8e;--accent-text:#052e1c;--success:#7ee2b8;--danger:#ff6369;--warning:#f5a524;--info:#9ba7ff;--neutral-badge:#a1a1a1;--code-bg:#0f0f0f;--keyword:#c4a5ff;--identifier:#ededed;--string:#ffcda1;--number:#7ee2b8;--function:#8cc8ff;--comment:#8a8a8a;--success-tint:rgba(126,226,184,0.14);--success-line:rgba(126,226,184,0.4);--danger-tint:rgba(255,99,105,0.14);--danger-line:rgba(255,99,105,0.4);--warning-tint:rgba(245,165,36,0.14);--warning-line:rgba(245,165,36,0.4);--info-tint:rgba(155,167,255,0.14);--info-line:rgba(155,167,255,0.4);--neutral-badge-tint:rgba(161,161,161,0.14);--neutral-badge-line:rgba(161,161,161,0.4);--accent-tint:rgba(62,207,142,0.14);--accent-line:rgba(62,207,142,0.4)}
+  /* ===== 3 · Ember =====
+     bg              #1a1714
+     surface         #221e1a
+     surface-raised  #2d2823
+     border          #3d362f
+     text-primary    #f2ebe3
+     text-muted      #aba196
+     accent          #f59e0b
+     accent-text     #1f1403
+     success         #8fcf6f
+     danger          #f2735f
+     warning         #e9cf52
+     info            #82b6e3
+     neutral-badge   #aba196
+     code-bg         #151210
+     keyword         #f0883e
+     identifier      #f2ebe3
+     string          #c3d98a
+     number          #dcaeea
+     function        #f2c66d
+     comment         #948a7f
+  */
+  .t-ember{--bg:#1a1714;--surface:#221e1a;--surface-raised:#2d2823;--border:#3d362f;--text-primary:#f2ebe3;--text-muted:#aba196;--accent:#f59e0b;--accent-text:#1f1403;--success:#8fcf6f;--danger:#f2735f;--warning:#e9cf52;--info:#82b6e3;--neutral-badge:#aba196;--code-bg:#151210;--keyword:#f0883e;--identifier:#f2ebe3;--string:#c3d98a;--number:#dcaeea;--function:#f2c66d;--comment:#948a7f;--success-tint:rgba(143,207,111,0.14);--success-line:rgba(143,207,111,0.4);--danger-tint:rgba(242,115,95,0.14);--danger-line:rgba(242,115,95,0.4);--warning-tint:rgba(233,207,82,0.14);--warning-line:rgba(233,207,82,0.4);--info-tint:rgba(130,182,227,0.14);--info-line:rgba(130,182,227,0.4);--neutral-badge-tint:rgba(171,161,150,0.14);--neutral-badge-line:rgba(171,161,150,0.4);--accent-tint:rgba(245,158,11,0.14);--accent-line:rgba(245,158,11,0.4)}
+  /* ===== 4 · Midnight Terminal =====
+     bg              #050b18
+     surface         #0a1528
+     surface-raised  #12223f
+     border          #28406a
+     text-primary    #f4f8ff
+     text-muted      #a5b8d1
+     accent          #22d3ee
+     accent-text     #021219
+     success         #4ade80
+     danger          #ff6b86
+     warning         #facc15
+     info            #b49cff
+     neutral-badge   #94a3b8
+     code-bg         #020712
+     keyword         #ff7ac6
+     identifier      #e8f1ff
+     string          #b5e655
+     number          #fbbf24
+     function        #22d3ee
+     comment         #7690b0
+  */
+  .t-terminal{--bg:#050b18;--surface:#0a1528;--surface-raised:#12223f;--border:#28406a;--text-primary:#f4f8ff;--text-muted:#a5b8d1;--accent:#22d3ee;--accent-text:#021219;--success:#4ade80;--danger:#ff6b86;--warning:#facc15;--info:#b49cff;--neutral-badge:#94a3b8;--code-bg:#020712;--keyword:#ff7ac6;--identifier:#e8f1ff;--string:#b5e655;--number:#fbbf24;--function:#22d3ee;--comment:#7690b0;--success-tint:rgba(74,222,128,0.14);--success-line:rgba(74,222,128,0.4);--danger-tint:rgba(255,107,134,0.14);--danger-line:rgba(255,107,134,0.4);--warning-tint:rgba(250,204,21,0.14);--warning-line:rgba(250,204,21,0.4);--info-tint:rgba(180,156,255,0.14);--info-line:rgba(180,156,255,0.4);--neutral-badge-tint:rgba(148,163,184,0.14);--neutral-badge-line:rgba(148,163,184,0.4);--accent-tint:rgba(34,211,238,0.14);--accent-line:rgba(34,211,238,0.4)}
+  /* ===== 5 · Dusk Slate =====
+     bg              #1e2230
+     surface         #262b3b
+     surface-raised  #2f3547
+     border          #3d4459
+     text-primary    #d6dae7
+     text-muted      #a0a7bd
+     accent          #a78bfa
+     accent-text     #161229
+     success         #82d1a6
+     danger          #f0909f
+     warning         #e6c27f
+     info            #86bfeb
+     neutral-badge   #a0a7bd
+     code-bg         #1b1f2b
+     keyword         #c7abff
+     identifier      #d6dae7
+     string          #a9dba3
+     number          #f2b88a
+     function        #92c7f2
+     comment         #8890a8
+  */
+  .t-dusk{--bg:#1e2230;--surface:#262b3b;--surface-raised:#2f3547;--border:#3d4459;--text-primary:#d6dae7;--text-muted:#a0a7bd;--accent:#a78bfa;--accent-text:#161229;--success:#82d1a6;--danger:#f0909f;--warning:#e6c27f;--info:#86bfeb;--neutral-badge:#a0a7bd;--code-bg:#1b1f2b;--keyword:#c7abff;--identifier:#d6dae7;--string:#a9dba3;--number:#f2b88a;--function:#92c7f2;--comment:#8890a8;--success-tint:rgba(130,209,166,0.14);--success-line:rgba(130,209,166,0.4);--danger-tint:rgba(240,144,159,0.14);--danger-line:rgba(240,144,159,0.4);--warning-tint:rgba(230,194,127,0.14);--warning-line:rgba(230,194,127,0.4);--info-tint:rgba(134,191,235,0.14);--info-line:rgba(134,191,235,0.4);--neutral-badge-tint:rgba(160,167,189,0.14);--neutral-badge-line:rgba(160,167,189,0.4);--accent-tint:rgba(167,139,250,0.14);--accent-line:rgba(167,139,250,0.4)}
+
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:#575757;color:#f5f5f5;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.45}
+  .page-h{max-width:1680px;margin:0 auto;padding:28px 16px 8px}
+  .page-h h1{margin:0 0 4px;font-size:22px;font-weight:650}
+  .page-h p{margin:0;color:#ececec}
+  .grid{max-width:1680px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:20px}
+  .theme{background:var(--bg);color:var(--text-primary);border-radius:12px;padding:20px;border:1px solid var(--border);min-width:0}
+  .th h2{margin:0;font-size:17px;font-weight:650}
+  .th p{margin:4px 0 14px;color:var(--text-muted)}
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:18px}
+  .chip{display:grid;grid-template-columns:22px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 7px}
+  .sw{grid-row:1/3;width:22px;height:22px;border-radius:4px;border:1px solid rgba(255,255,255,.18)}
+  .rn{font-size:12px;color:var(--text-primary)}
+  .hx{font-size:11px;color:var(--text-muted);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .demo{display:flex;flex-direction:column;gap:10px}
+  .card,.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+  .row{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+  .card h3{margin:0;font-size:15px;font-weight:600}
+  .card h3 a{color:var(--accent);text-decoration:none}
+  .card h3 a:hover{text-decoration:underline}
+  .desc{margin:6px 0 10px;color:var(--text-muted)}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+  .muted{color:var(--text-muted)}
+  .avatar{width:20px;height:20px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-primary)}
+  .tag{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--surface-raised);border:1px solid var(--border);color:var(--text-primary)}
+  .badge{font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap;font-weight:500}
+  .b-info{color:var(--info);background:var(--info-tint);border-color:var(--info-line)}
+  .b-danger{color:var(--danger);background:var(--danger-tint);border-color:var(--danger-line)}
+  .b-neutral{color:var(--neutral-badge);background:var(--neutral-badge-tint);border-color:var(--neutral-badge-line)}
+  .b-plain{color:var(--text-muted);border-color:var(--border);background:transparent}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .btn{font:inherit;font-size:13px;font-weight:600;background:var(--accent);color:var(--accent-text);border:1px solid var(--accent);border-radius:6px;padding:4px 14px;cursor:pointer}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.ghost{background:var(--accent-tint);color:var(--accent);border-color:var(--accent-line)}
+  .code{margin:0;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.55;color:var(--identifier);overflow-x:auto;white-space:pre}
+  .compact .code{margin-top:10px}
+  .k{color:var(--keyword);font-weight:600} .i{color:var(--identifier)} .s{color:var(--string)} .n{color:var(--number)} .f{color:var(--function)} .c{color:var(--comment);font-style:italic}
+  .vt{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px}
+  .line{display:flex;gap:8px;align-items:flex-start;padding:4px 0}
+  .line .ico{width:16px;flex:none;text-align:center}
+  .line.danger{color:var(--danger)} .line.warning{color:var(--warning)}
+  .line.danger{background:var(--danger-tint);border-left:3px solid var(--danger);padding:6px 8px;border-radius:4px}
+  .line.warning{padding:6px 8px}
+  .line code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+  .note{font-size:13px;border-top:1px solid var(--border);margin-top:6px;padding-top:8px}
+  .inputrow{display:flex;gap:8px;margin-top:10px}
+  .input{flex:1;background:var(--surface-raised);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text-muted);font-size:13px}
+  .contrast{margin:12px 0 0;font-size:11.5px;color:var(--text-muted)}
+  .contrast b{color:var(--text-primary);font-weight:600}
+</style>
+</head>
+<body>
+<div class="page-h">
+  <h1>DevAssist Hub · SQL module — color themes (round 1)</h1>
+  <p>Five dark-mode directions. Same components, same content; only the palette and register change. Neutral grey page so none is favored.</p>
+</div>
+<main class="grid">
+
+<section class="theme t-graphite">
+  <header class="th">
+    <h2>1 · Graphite</h2>
+    <p>Calm, familiar, neutral. Feels like home on GitHub: cool greys, a trustworthy blue.</p>
+  </header>
+  <div class="chips"><div class="chip"><span class="sw" style="background:#0d1117"></span><span class="rn">bg</span><span class="hx">#0d1117</span></div><div class="chip"><span class="sw" style="background:#161b22"></span><span class="rn">surface</span><span class="hx">#161b22</span></div><div class="chip"><span class="sw" style="background:#21262d"></span><span class="rn">surface-raised</span><span class="hx">#21262d</span></div><div class="chip"><span class="sw" style="background:#30363d"></span><span class="rn">border</span><span class="hx">#30363d</span></div><div class="chip"><span class="sw" style="background:#e6edf3"></span><span class="rn">text-primary</span><span class="hx">#e6edf3</span></div><div class="chip"><span class="sw" style="background:#9198a1"></span><span class="rn">text-muted</span><span class="hx">#9198a1</span></div><div class="chip"><span class="sw" style="background:#4493f8"></span><span class="rn">accent</span><span class="hx">#4493f8</span></div><div class="chip"><span class="sw" style="background:#0d1117"></span><span class="rn">accent-text</span><span class="hx">#0d1117</span></div><div class="chip"><span class="sw" style="background:#3fb950"></span><span class="rn">success</span><span class="hx">#3fb950</span></div><div class="chip"><span class="sw" style="background:#f85149"></span><span class="rn">danger</span><span class="hx">#f85149</span></div><div class="chip"><span class="sw" style="background:#d29922"></span><span class="rn">warning</span><span class="hx">#d29922</span></div><div class="chip"><span class="sw" style="background:#ab7df8"></span><span class="rn">info</span><span class="hx">#ab7df8</span></div><div class="chip"><span class="sw" style="background:#9198a1"></span><span class="rn">neutral-badge</span><span class="hx">#9198a1</span></div><div class="chip"><span class="sw" style="background:#0d1117"></span><span class="rn">code-bg</span><span class="hx">#0d1117</span></div><div class="chip"><span class="sw" style="background:#ff7b72"></span><span class="rn">keyword</span><span class="hx">#ff7b72</span></div><div class="chip"><span class="sw" style="background:#e6edf3"></span><span class="rn">identifier</span><span class="hx">#e6edf3</span></div><div class="chip"><span class="sw" style="background:#a5d6ff"></span><span class="rn">string</span><span class="hx">#a5d6ff</span></div><div class="chip"><span class="sw" style="background:#79c0ff"></span><span class="rn">number</span><span class="hx">#79c0ff</span></div><div class="chip"><span class="sw" style="background:#d2a8ff"></span><span class="rn">function</span><span class="hx">#d2a8ff</span></div><div class="chip"><span class="sw" style="background:#8b949e"></span><span class="rn">comment</span><span class="hx">#8b949e</span></div></div>
+  <div class="demo">
+    <article class="card">
+      <div class="row top">
+        <h3><a href="#">Weekly orders by region</a></h3>
+        <button class="btn">Copy</button>
+      </div>
+      <p class="desc">Orders grouped by region for last week, for the Monday ops report.</p>
+      <div class="meta">
+        <span class="avatar">s</span><span class="muted">sami</span>
+        <span class="tag">reporting</span><span class="tag">orders</span>
+        <span class="badge b-info">LLM-generated</span>
+        <span class="badge b-plain">Used 14&times; &middot; 2 weeks ago</span>
+      </div>
+      <pre class="code"><span class="c">-- weekly ops report</span>
+<span class="k">SELECT</span> <span class="i">region</span>, <span class="f">COUNT</span>(*) <span class="k">AS</span> <span class="i">orders</span>
+<span class="k">FROM</span> <span class="i">orders</span>
+<span class="k">WHERE</span> <span class="i">created_at</span> &gt;= <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">&#x27;1 week&#x27;</span>
+  <span class="k">AND</span> <span class="i">created_at</span> &lt;  <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>())
+<span class="k">GROUP BY</span> <span class="i">region</span>;</pre>
+    </article>
+    <article class="card compact">
+      <div class="row top">
+        <h3><a href="#">Archive cancelled orders</a></h3>
+        <span class="badges"><span class="badge b-danger">Not read-only</span><span class="badge b-neutral">Deprecated</span></span>
+      </div>
+      <pre class="code"><span class="k">UPDATE</span> <span class="i">orders</span> <span class="k">SET</span> <span class="i">status</span> = <span class="s">&#x27;archived&#x27;</span> <span class="k">WHERE</span> <span class="i">status</span> = <span class="s">&#x27;cancelled&#x27;</span>;</pre>
+    </article>
+    <div class="panel">
+      <div class="vt">Validation result</div>
+      <div class="line danger"><span class="ico">&#x2715;</span><span><strong>Rejected</strong> &mdash; <code>DATA_MODIFYING_CTE</code>: the CTE 'x' contains an INSERT</span></div>
+      <div class="line warning"><span class="ico">&#x26A0;</span><span><code>pg_sleep</code> may cause performance issues</span></div>
+      <div class="line muted note"><span class="ico">&#x24D8;</span><span><strong>Safety note:</strong> Verified to be a single read-only SELECT structure. Not verified to be correct, fast, or safe on your schema.</span></div>
+      <div class="inputrow"><span class="input">Describe the query you need&hellip;</span><span class="btn ghost">Generate</span></div>
+    </div>
+  </div>
+  <p class="contrast">WCAG contrast &mdash; text-primary/bg <b>16.0:1</b>, text-muted/bg <b>6.5:1</b>, text-muted/surface 5.9:1, accent-text/accent 6.1:1, danger/surface 5.2:1, warning/surface 6.9:1, comment/code-bg 6.2:1 (all &ge; 4.5:1 AA).</p>
+</section>
+<section class="theme t-emerald">
+  <header class="th">
+    <h2>2 · Obsidian Emerald</h2>
+    <p>Focused and modern. Near-black canvas, one vivid emerald signal, like a database console.</p>
+  </header>
+  <div class="chips"><div class="chip"><span class="sw" style="background:#121212"></span><span class="rn">bg</span><span class="hx">#121212</span></div><div class="chip"><span class="sw" style="background:#1a1a1a"></span><span class="rn">surface</span><span class="hx">#1a1a1a</span></div><div class="chip"><span class="sw" style="background:#242424"></span><span class="rn">surface-raised</span><span class="hx">#242424</span></div><div class="chip"><span class="sw" style="background:#2e2e2e"></span><span class="rn">border</span><span class="hx">#2e2e2e</span></div><div class="chip"><span class="sw" style="background:#ededed"></span><span class="rn">text-primary</span><span class="hx">#ededed</span></div><div class="chip"><span class="sw" style="background:#a1a1a1"></span><span class="rn">text-muted</span><span class="hx">#a1a1a1</span></div><div class="chip"><span class="sw" style="background:#3ecf8e"></span><span class="rn">accent</span><span class="hx">#3ecf8e</span></div><div class="chip"><span class="sw" style="background:#052e1c"></span><span class="rn">accent-text</span><span class="hx">#052e1c</span></div><div class="chip"><span class="sw" style="background:#7ee2b8"></span><span class="rn">success</span><span class="hx">#7ee2b8</span></div><div class="chip"><span class="sw" style="background:#ff6369"></span><span class="rn">danger</span><span class="hx">#ff6369</span></div><div class="chip"><span class="sw" style="background:#f5a524"></span><span class="rn">warning</span><span class="hx">#f5a524</span></div><div class="chip"><span class="sw" style="background:#9ba7ff"></span><span class="rn">info</span><span class="hx">#9ba7ff</span></div><div class="chip"><span class="sw" style="background:#a1a1a1"></span><span class="rn">neutral-badge</span><span class="hx">#a1a1a1</span></div><div class="chip"><span class="sw" style="background:#0f0f0f"></span><span class="rn">code-bg</span><span class="hx">#0f0f0f</span></div><div class="chip"><span class="sw" style="background:#c4a5ff"></span><span class="rn">keyword</span><span class="hx">#c4a5ff</span></div><div class="chip"><span class="sw" style="background:#ededed"></span><span class="rn">identifier</span><span class="hx">#ededed</span></div><div class="chip"><span class="sw" style="background:#ffcda1"></span><span class="rn">string</span><span class="hx">#ffcda1</span></div><div class="chip"><span class="sw" style="background:#7ee2b8"></span><span class="rn">number</span><span class="hx">#7ee2b8</span></div><div class="chip"><span class="sw" style="background:#8cc8ff"></span><span class="rn">function</span><span class="hx">#8cc8ff</span></div><div class="chip"><span class="sw" style="background:#8a8a8a"></span><span class="rn">comment</span><span class="hx">#8a8a8a</span></div></div>
+  <div class="demo">
+    <article class="card">
+      <div class="row top">
+        <h3><a href="#">Weekly orders by region</a></h3>
+        <button class="btn">Copy</button>
+      </div>
+      <p class="desc">Orders grouped by region for last week, for the Monday ops report.</p>
+      <div class="meta">
+        <span class="avatar">s</span><span class="muted">sami</span>
+        <span class="tag">reporting</span><span class="tag">orders</span>
+        <span class="badge b-info">LLM-generated</span>
+        <span class="badge b-plain">Used 14&times; &middot; 2 weeks ago</span>
+      </div>
+      <pre class="code"><span class="c">-- weekly ops report</span>
+<span class="k">SELECT</span> <span class="i">region</span>, <span class="f">COUNT</span>(*) <span class="k">AS</span> <span class="i">orders</span>
+<span class="k">FROM</span> <span class="i">orders</span>
+<span class="k">WHERE</span> <span class="i">created_at</span> &gt;= <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">&#x27;1 week&#x27;</span>
+  <span class="k">AND</span> <span class="i">created_at</span> &lt;  <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>())
+<span class="k">GROUP BY</span> <span class="i">region</span>;</pre>
+    </article>
+    <article class="card compact">
+      <div class="row top">
+        <h3><a href="#">Archive cancelled orders</a></h3>
+        <span class="badges"><span class="badge b-danger">Not read-only</span><span class="badge b-neutral">Deprecated</span></span>
+      </div>
+      <pre class="code"><span class="k">UPDATE</span> <span class="i">orders</span> <span class="k">SET</span> <span class="i">status</span> = <span class="s">&#x27;archived&#x27;</span> <span class="k">WHERE</span> <span class="i">status</span> = <span class="s">&#x27;cancelled&#x27;</span>;</pre>
+    </article>
+    <div class="panel">
+      <div class="vt">Validation result</div>
+      <div class="line danger"><span class="ico">&#x2715;</span><span><strong>Rejected</strong> &mdash; <code>DATA_MODIFYING_CTE</code>: the CTE 'x' contains an INSERT</span></div>
+      <div class="line warning"><span class="ico">&#x26A0;</span><span><code>pg_sleep</code> may cause performance issues</span></div>
+      <div class="line muted note"><span class="ico">&#x24D8;</span><span><strong>Safety note:</strong> Verified to be a single read-only SELECT structure. Not verified to be correct, fast, or safe on your schema.</span></div>
+      <div class="inputrow"><span class="input">Describe the query you need&hellip;</span><span class="btn ghost">Generate</span></div>
+    </div>
+  </div>
+  <p class="contrast">WCAG contrast &mdash; text-primary/bg <b>16.0:1</b>, text-muted/bg <b>7.3:1</b>, text-muted/surface 6.7:1, accent-text/accent 7.4:1, danger/surface 6.0:1, warning/surface 8.5:1, comment/code-bg 5.6:1 (all &ge; 4.5:1 AA).</p>
+</section>
+<section class="theme t-ember">
+  <header class="th">
+    <h2>3 · Ember</h2>
+    <p>Warm and human. Charcoal with an amber glow, a workshop more than a lab.</p>
+  </header>
+  <div class="chips"><div class="chip"><span class="sw" style="background:#1a1714"></span><span class="rn">bg</span><span class="hx">#1a1714</span></div><div class="chip"><span class="sw" style="background:#221e1a"></span><span class="rn">surface</span><span class="hx">#221e1a</span></div><div class="chip"><span class="sw" style="background:#2d2823"></span><span class="rn">surface-raised</span><span class="hx">#2d2823</span></div><div class="chip"><span class="sw" style="background:#3d362f"></span><span class="rn">border</span><span class="hx">#3d362f</span></div><div class="chip"><span class="sw" style="background:#f2ebe3"></span><span class="rn">text-primary</span><span class="hx">#f2ebe3</span></div><div class="chip"><span class="sw" style="background:#aba196"></span><span class="rn">text-muted</span><span class="hx">#aba196</span></div><div class="chip"><span class="sw" style="background:#f59e0b"></span><span class="rn">accent</span><span class="hx">#f59e0b</span></div><div class="chip"><span class="sw" style="background:#1f1403"></span><span class="rn">accent-text</span><span class="hx">#1f1403</span></div><div class="chip"><span class="sw" style="background:#8fcf6f"></span><span class="rn">success</span><span class="hx">#8fcf6f</span></div><div class="chip"><span class="sw" style="background:#f2735f"></span><span class="rn">danger</span><span class="hx">#f2735f</span></div><div class="chip"><span class="sw" style="background:#e9cf52"></span><span class="rn">warning</span><span class="hx">#e9cf52</span></div><div class="chip"><span class="sw" style="background:#82b6e3"></span><span class="rn">info</span><span class="hx">#82b6e3</span></div><div class="chip"><span class="sw" style="background:#aba196"></span><span class="rn">neutral-badge</span><span class="hx">#aba196</span></div><div class="chip"><span class="sw" style="background:#151210"></span><span class="rn">code-bg</span><span class="hx">#151210</span></div><div class="chip"><span class="sw" style="background:#f0883e"></span><span class="rn">keyword</span><span class="hx">#f0883e</span></div><div class="chip"><span class="sw" style="background:#f2ebe3"></span><span class="rn">identifier</span><span class="hx">#f2ebe3</span></div><div class="chip"><span class="sw" style="background:#c3d98a"></span><span class="rn">string</span><span class="hx">#c3d98a</span></div><div class="chip"><span class="sw" style="background:#dcaeea"></span><span class="rn">number</span><span class="hx">#dcaeea</span></div><div class="chip"><span class="sw" style="background:#f2c66d"></span><span class="rn">function</span><span class="hx">#f2c66d</span></div><div class="chip"><span class="sw" style="background:#948a7f"></span><span class="rn">comment</span><span class="hx">#948a7f</span></div></div>
+  <div class="demo">
+    <article class="card">
+      <div class="row top">
+        <h3><a href="#">Weekly orders by region</a></h3>
+        <button class="btn">Copy</button>
+      </div>
+      <p class="desc">Orders grouped by region for last week, for the Monday ops report.</p>
+      <div class="meta">
+        <span class="avatar">s</span><span class="muted">sami</span>
+        <span class="tag">reporting</span><span class="tag">orders</span>
+        <span class="badge b-info">LLM-generated</span>
+        <span class="badge b-plain">Used 14&times; &middot; 2 weeks ago</span>
+      </div>
+      <pre class="code"><span class="c">-- weekly ops report</span>
+<span class="k">SELECT</span> <span class="i">region</span>, <span class="f">COUNT</span>(*) <span class="k">AS</span> <span class="i">orders</span>
+<span class="k">FROM</span> <span class="i">orders</span>
+<span class="k">WHERE</span> <span class="i">created_at</span> &gt;= <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">&#x27;1 week&#x27;</span>
+  <span class="k">AND</span> <span class="i">created_at</span> &lt;  <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>())
+<span class="k">GROUP BY</span> <span class="i">region</span>;</pre>
+    </article>
+    <article class="card compact">
+      <div class="row top">
+        <h3><a href="#">Archive cancelled orders</a></h3>
+        <span class="badges"><span class="badge b-danger">Not read-only</span><span class="badge b-neutral">Deprecated</span></span>
+      </div>
+      <pre class="code"><span class="k">UPDATE</span> <span class="i">orders</span> <span class="k">SET</span> <span class="i">status</span> = <span class="s">&#x27;archived&#x27;</span> <span class="k">WHERE</span> <span class="i">status</span> = <span class="s">&#x27;cancelled&#x27;</span>;</pre>
+    </article>
+    <div class="panel">
+      <div class="vt">Validation result</div>
+      <div class="line danger"><span class="ico">&#x2715;</span><span><strong>Rejected</strong> &mdash; <code>DATA_MODIFYING_CTE</code>: the CTE 'x' contains an INSERT</span></div>
+      <div class="line warning"><span class="ico">&#x26A0;</span><span><code>pg_sleep</code> may cause performance issues</span></div>
+      <div class="line muted note"><span class="ico">&#x24D8;</span><span><strong>Safety note:</strong> Verified to be a single read-only SELECT structure. Not verified to be correct, fast, or safe on your schema.</span></div>
+      <div class="inputrow"><span class="input">Describe the query you need&hellip;</span><span class="btn ghost">Generate</span></div>
+    </div>
+  </div>
+  <p class="contrast">WCAG contrast &mdash; text-primary/bg <b>15.1:1</b>, text-muted/bg <b>7.0:1</b>, text-muted/surface 6.5:1, accent-text/accent 8.4:1, danger/surface 5.8:1, warning/surface 10.7:1, comment/code-bg 5.5:1 (all &ge; 4.5:1 AA).</p>
+</section>
+<section class="theme t-terminal">
+  <header class="th">
+    <h2>4 · Midnight Terminal</h2>
+    <p>Sharp and high-contrast. Deep navy, crisp white, electric cyan; built for long sessions and fast scanning.</p>
+  </header>
+  <div class="chips"><div class="chip"><span class="sw" style="background:#050b18"></span><span class="rn">bg</span><span class="hx">#050b18</span></div><div class="chip"><span class="sw" style="background:#0a1528"></span><span class="rn">surface</span><span class="hx">#0a1528</span></div><div class="chip"><span class="sw" style="background:#12223f"></span><span class="rn">surface-raised</span><span class="hx">#12223f</span></div><div class="chip"><span class="sw" style="background:#28406a"></span><span class="rn">border</span><span class="hx">#28406a</span></div><div class="chip"><span class="sw" style="background:#f4f8ff"></span><span class="rn">text-primary</span><span class="hx">#f4f8ff</span></div><div class="chip"><span class="sw" style="background:#a5b8d1"></span><span class="rn">text-muted</span><span class="hx">#a5b8d1</span></div><div class="chip"><span class="sw" style="background:#22d3ee"></span><span class="rn">accent</span><span class="hx">#22d3ee</span></div><div class="chip"><span class="sw" style="background:#021219"></span><span class="rn">accent-text</span><span class="hx">#021219</span></div><div class="chip"><span class="sw" style="background:#4ade80"></span><span class="rn">success</span><span class="hx">#4ade80</span></div><div class="chip"><span class="sw" style="background:#ff6b86"></span><span class="rn">danger</span><span class="hx">#ff6b86</span></div><div class="chip"><span class="sw" style="background:#facc15"></span><span class="rn">warning</span><span class="hx">#facc15</span></div><div class="chip"><span class="sw" style="background:#b49cff"></span><span class="rn">info</span><span class="hx">#b49cff</span></div><div class="chip"><span class="sw" style="background:#94a3b8"></span><span class="rn">neutral-badge</span><span class="hx">#94a3b8</span></div><div class="chip"><span class="sw" style="background:#020712"></span><span class="rn">code-bg</span><span class="hx">#020712</span></div><div class="chip"><span class="sw" style="background:#ff7ac6"></span><span class="rn">keyword</span><span class="hx">#ff7ac6</span></div><div class="chip"><span class="sw" style="background:#e8f1ff"></span><span class="rn">identifier</span><span class="hx">#e8f1ff</span></div><div class="chip"><span class="sw" style="background:#b5e655"></span><span class="rn">string</span><span class="hx">#b5e655</span></div><div class="chip"><span class="sw" style="background:#fbbf24"></span><span class="rn">number</span><span class="hx">#fbbf24</span></div><div class="chip"><span class="sw" style="background:#22d3ee"></span><span class="rn">function</span><span class="hx">#22d3ee</span></div><div class="chip"><span class="sw" style="background:#7690b0"></span><span class="rn">comment</span><span class="hx">#7690b0</span></div></div>
+  <div class="demo">
+    <article class="card">
+      <div class="row top">
+        <h3><a href="#">Weekly orders by region</a></h3>
+        <button class="btn">Copy</button>
+      </div>
+      <p class="desc">Orders grouped by region for last week, for the Monday ops report.</p>
+      <div class="meta">
+        <span class="avatar">s</span><span class="muted">sami</span>
+        <span class="tag">reporting</span><span class="tag">orders</span>
+        <span class="badge b-info">LLM-generated</span>
+        <span class="badge b-plain">Used 14&times; &middot; 2 weeks ago</span>
+      </div>
+      <pre class="code"><span class="c">-- weekly ops report</span>
+<span class="k">SELECT</span> <span class="i">region</span>, <span class="f">COUNT</span>(*) <span class="k">AS</span> <span class="i">orders</span>
+<span class="k">FROM</span> <span class="i">orders</span>
+<span class="k">WHERE</span> <span class="i">created_at</span> &gt;= <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">&#x27;1 week&#x27;</span>
+  <span class="k">AND</span> <span class="i">created_at</span> &lt;  <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>())
+<span class="k">GROUP BY</span> <span class="i">region</span>;</pre>
+    </article>
+    <article class="card compact">
+      <div class="row top">
+        <h3><a href="#">Archive cancelled orders</a></h3>
+        <span class="badges"><span class="badge b-danger">Not read-only</span><span class="badge b-neutral">Deprecated</span></span>
+      </div>
+      <pre class="code"><span class="k">UPDATE</span> <span class="i">orders</span> <span class="k">SET</span> <span class="i">status</span> = <span class="s">&#x27;archived&#x27;</span> <span class="k">WHERE</span> <span class="i">status</span> = <span class="s">&#x27;cancelled&#x27;</span>;</pre>
+    </article>
+    <div class="panel">
+      <div class="vt">Validation result</div>
+      <div class="line danger"><span class="ico">&#x2715;</span><span><strong>Rejected</strong> &mdash; <code>DATA_MODIFYING_CTE</code>: the CTE 'x' contains an INSERT</span></div>
+      <div class="line warning"><span class="ico">&#x26A0;</span><span><code>pg_sleep</code> may cause performance issues</span></div>
+      <div class="line muted note"><span class="ico">&#x24D8;</span><span><strong>Safety note:</strong> Verified to be a single read-only SELECT structure. Not verified to be correct, fast, or safe on your schema.</span></div>
+      <div class="inputrow"><span class="input">Describe the query you need&hellip;</span><span class="btn ghost">Generate</span></div>
+    </div>
+  </div>
+  <p class="contrast">WCAG contrast &mdash; text-primary/bg <b>18.5:1</b>, text-muted/bg <b>9.7:1</b>, text-muted/surface 9.0:1, accent-text/accent 10.5:1, danger/surface 6.7:1, warning/surface 11.9:1, comment/code-bg 6.1:1 (all &ge; 4.5:1 AA).</p>
+</section>
+<section class="theme t-dusk">
+  <header class="th">
+    <h2>5 · Dusk Slate</h2>
+    <p>Soft and quiet. Low-glare slate with a gentle violet; easy on the eyes, nothing shouts.</p>
+  </header>
+  <div class="chips"><div class="chip"><span class="sw" style="background:#1e2230"></span><span class="rn">bg</span><span class="hx">#1e2230</span></div><div class="chip"><span class="sw" style="background:#262b3b"></span><span class="rn">surface</span><span class="hx">#262b3b</span></div><div class="chip"><span class="sw" style="background:#2f3547"></span><span class="rn">surface-raised</span><span class="hx">#2f3547</span></div><div class="chip"><span class="sw" style="background:#3d4459"></span><span class="rn">border</span><span class="hx">#3d4459</span></div><div class="chip"><span class="sw" style="background:#d6dae7"></span><span class="rn">text-primary</span><span class="hx">#d6dae7</span></div><div class="chip"><span class="sw" style="background:#a0a7bd"></span><span class="rn">text-muted</span><span class="hx">#a0a7bd</span></div><div class="chip"><span class="sw" style="background:#a78bfa"></span><span class="rn">accent</span><span class="hx">#a78bfa</span></div><div class="chip"><span class="sw" style="background:#161229"></span><span class="rn">accent-text</span><span class="hx">#161229</span></div><div class="chip"><span class="sw" style="background:#82d1a6"></span><span class="rn">success</span><span class="hx">#82d1a6</span></div><div class="chip"><span class="sw" style="background:#f0909f"></span><span class="rn">danger</span><span class="hx">#f0909f</span></div><div class="chip"><span class="sw" style="background:#e6c27f"></span><span class="rn">warning</span><span class="hx">#e6c27f</span></div><div class="chip"><span class="sw" style="background:#86bfeb"></span><span class="rn">info</span><span class="hx">#86bfeb</span></div><div class="chip"><span class="sw" style="background:#a0a7bd"></span><span class="rn">neutral-badge</span><span class="hx">#a0a7bd</span></div><div class="chip"><span class="sw" style="background:#1b1f2b"></span><span class="rn">code-bg</span><span class="hx">#1b1f2b</span></div><div class="chip"><span class="sw" style="background:#c7abff"></span><span class="rn">keyword</span><span class="hx">#c7abff</span></div><div class="chip"><span class="sw" style="background:#d6dae7"></span><span class="rn">identifier</span><span class="hx">#d6dae7</span></div><div class="chip"><span class="sw" style="background:#a9dba3"></span><span class="rn">string</span><span class="hx">#a9dba3</span></div><div class="chip"><span class="sw" style="background:#f2b88a"></span><span class="rn">number</span><span class="hx">#f2b88a</span></div><div class="chip"><span class="sw" style="background:#92c7f2"></span><span class="rn">function</span><span class="hx">#92c7f2</span></div><div class="chip"><span class="sw" style="background:#8890a8"></span><span class="rn">comment</span><span class="hx">#8890a8</span></div></div>
+  <div class="demo">
+    <article class="card">
+      <div class="row top">
+        <h3><a href="#">Weekly orders by region</a></h3>
+        <button class="btn">Copy</button>
+      </div>
+      <p class="desc">Orders grouped by region for last week, for the Monday ops report.</p>
+      <div class="meta">
+        <span class="avatar">s</span><span class="muted">sami</span>
+        <span class="tag">reporting</span><span class="tag">orders</span>
+        <span class="badge b-info">LLM-generated</span>
+        <span class="badge b-plain">Used 14&times; &middot; 2 weeks ago</span>
+      </div>
+      <pre class="code"><span class="c">-- weekly ops report</span>
+<span class="k">SELECT</span> <span class="i">region</span>, <span class="f">COUNT</span>(*) <span class="k">AS</span> <span class="i">orders</span>
+<span class="k">FROM</span> <span class="i">orders</span>
+<span class="k">WHERE</span> <span class="i">created_at</span> &gt;= <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>()) - <span class="k">interval</span> <span class="s">&#x27;1 week&#x27;</span>
+  <span class="k">AND</span> <span class="i">created_at</span> &lt;  <span class="f">date_trunc</span>(<span class="s">&#x27;week&#x27;</span>, <span class="f">now</span>())
+<span class="k">GROUP BY</span> <span class="i">region</span>;</pre>
+    </article>
+    <article class="card compact">
+      <div class="row top">
+        <h3><a href="#">Archive cancelled orders</a></h3>
+        <span class="badges"><span class="badge b-danger">Not read-only</span><span class="badge b-neutral">Deprecated</span></span>
+      </div>
+      <pre class="code"><span class="k">UPDATE</span> <span class="i">orders</span> <span class="k">SET</span> <span class="i">status</span> = <span class="s">&#x27;archived&#x27;</span> <span class="k">WHERE</span> <span class="i">status</span> = <span class="s">&#x27;cancelled&#x27;</span>;</pre>
+    </article>
+    <div class="panel">
+      <div class="vt">Validation result</div>
+      <div class="line danger"><span class="ico">&#x2715;</span><span><strong>Rejected</strong> &mdash; <code>DATA_MODIFYING_CTE</code>: the CTE 'x' contains an INSERT</span></div>
+      <div class="line warning"><span class="ico">&#x26A0;</span><span><code>pg_sleep</code> may cause performance issues</span></div>
+      <div class="line muted note"><span class="ico">&#x24D8;</span><span><strong>Safety note:</strong> Verified to be a single read-only SELECT structure. Not verified to be correct, fast, or safe on your schema.</span></div>
+      <div class="inputrow"><span class="input">Describe the query you need&hellip;</span><span class="btn ghost">Generate</span></div>
+    </div>
+  </div>
+  <p class="contrast">WCAG contrast &mdash; text-primary/bg <b>11.3:1</b>, text-muted/bg <b>6.6:1</b>, text-muted/surface 5.9:1, accent-text/accent 6.7:1, danger/surface 6.2:1, warning/surface 8.3:1, comment/code-bg 5.2:1 (all &ge; 4.5:1 AA).</p>
+</section>
+</main>
+</body>
+</html>
