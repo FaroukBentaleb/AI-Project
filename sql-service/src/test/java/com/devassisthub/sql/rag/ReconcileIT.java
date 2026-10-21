@@ -1,9 +1,10 @@
 package com.devassisthub.sql.rag;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import com.devassisthub.sql.support.AbstractIntegrationTest;
-import com.devassisthub.sql.support.StubEmbeddingServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,15 +13,16 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/** Story 5.4: Reconciliation against the shared Qdrant with a stubbed embedding (no real HF calls). */
+/** Story 5.4: Reconciliation against the shared Qdrant with a mocked EmbeddingClient (no external or shared stub calls). */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"eureka.client.enabled=false", "sql.reconcile.batch-size=2"})
 class ReconcileIT extends AbstractIntegrationTest {
@@ -30,19 +32,30 @@ class ReconcileIT extends AbstractIntegrationTest {
     @Autowired CollectionBootstrap bootstrap;
     @Autowired ObjectMapper mapper;
     @Autowired JdbcTemplate jdbc;
+    @MockBean EmbeddingClient embedding;
     @LocalServerPort int port;
     private final HttpClient http = HttpClient.newHttpClient();
 
     @BeforeEach
     void ready() {
+        embeddingWorks();
         assertThat(bootstrap.tryBootstrap()).isTrue();
-        StubEmbeddingServer.reset();
     }
 
-    @AfterEach
-    void resetStub() {
-        StubEmbeddingServer.reset();
+    /** Deterministic fake vector per text, sized to the collection. */
+    private void embeddingWorks() {
+        when(embedding.dimension()).thenReturn(DIMENSION);
+        when(embedding.embed(anyString())).thenAnswer(inv -> {
+            Random rnd = new Random(inv.<String>getArgument(0).hashCode());
+            float[] v = new float[DIMENSION];
+            for (int i = 0; i < v.length; i++) {
+                v[i] = rnd.nextFloat() - 0.5f;
+            }
+            return new EmbeddingResult.Embedded(v);
+        });
     }
+
+    private static final int DIMENSION = 384;
 
     private HttpResponse<String> send(String method, String path, String body) throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
@@ -124,13 +137,14 @@ class ReconcileIT extends AbstractIntegrationTest {
     void embeddingOutageLeavesRowsUnindexedForTheNextRun() throws Exception {
         long id = create("SELECT 920");
         unindex(id);
-        StubEmbeddingServer.failWith(500);
+        when(embedding.embed(anyString()))
+                .thenReturn(EmbeddingResult.unavailable(EmbeddingResult.Cause.PROVIDER_ERROR, "provider answered 500"));
 
         reconciler.reconcile();
         assertThat(indexed(id)).isFalse();
         assertThat(point(id)).isFalse();
 
-        StubEmbeddingServer.reset();
+        embeddingWorks();
         reconciler.reconcile();
         assertThat(indexed(id)).isTrue();
         assertThat(point(id)).isTrue();

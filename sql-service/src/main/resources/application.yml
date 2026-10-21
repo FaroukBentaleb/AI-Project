@@ -3,8 +3,8 @@ spring.application.name: sql-service
 # Local runs (IntelliJ / mvn spring-boot:run) read the AI keys from the git-ignored sql-service/.env.local; Docker passes env vars.
 spring.config.import: optional:file:.env.local[.properties],optional:file:sql-service/.env.local[.properties]
 spring.datasource.url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sql_db}
-spring.datasource.username: ${SPRING_DATASOURCE_USERNAME:devassist}
-spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+spring.datasource.username: ${SPRING_DATASOURCE_USERNAME:}
+spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD:}
 spring.jpa.hibernate.ddl-auto: validate
 spring.jackson.property-naming-strategy: SNAKE_CASE
 spring.flyway.enabled: true

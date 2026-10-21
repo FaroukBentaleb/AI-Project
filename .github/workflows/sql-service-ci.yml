@@ -63,23 +63,30 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: sql_db
-          POSTGRES_USER: sql_user
-          POSTGRES_PASSWORD: sql_smoke_pw
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U sql_user -d sql_db"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Throwaway password per run, masked in logs. Postgres runs as a step, not a service container:
+      # services start before any step, so they cannot read values written to GITHUB_ENV.
+      - name: Generate smoke Postgres password
+        run: |
+          pw=$(openssl rand -hex 16)
+          echo "::add-mask::$pw"
+          echo "SMOKE_PG_PASSWORD=$pw" >> "$GITHUB_ENV"
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name smoke-postgres -p 5432:5432 \
+            -e POSTGRES_DB=sql_db \
+            -e POSTGRES_USER=sql_user \
+            -e POSTGRES_PASSWORD="${{ env.SMOKE_PG_PASSWORD }}" \
+            postgres:16-alpine
+          for i in $(seq 1 30); do
+            docker exec smoke-postgres pg_isready -U sql_user -d sql_db && exit 0
+            sleep 2
+          done
+          echo "Postgres not ready after 60 s"; exit 1
 
       - name: Build image
         run: docker build -t sql-service:ci sql-service
@@ -91,7 +98,7 @@ jobs:
             -e SERVER_PORT=8084 \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/sql_db \
             -e SPRING_DATASOURCE_USERNAME=sql_user \
-            -e SPRING_DATASOURCE_PASSWORD=sql_smoke_pw \
+            -e SPRING_DATASOURCE_PASSWORD="${{ env.SMOKE_PG_PASSWORD }}" \
             -e EUREKA_CLIENT_ENABLED=false \
             -e QDRANT_HOST=127.0.0.1 \
             -e QDRANT_PORT=1 \
@@ -114,7 +121,7 @@ jobs:
 
       - name: Verify Flyway migrations applied
         run: |
-          count=$(docker exec "${{ job.services.postgres.id }}" \
+          count=$(docker exec smoke-postgres \
             psql -U sql_user -d sql_db -tAc "select count(*) from flyway_schema_history where success")
           echo "Successful Flyway migrations: $count"
           test "$count" -gt 0
@@ -125,7 +132,7 @@ jobs:
 
       - name: Stop container
         if: always()
-        run: docker rm -f sql-service-smoke || true
+        run: docker rm -f sql-service-smoke smoke-postgres || true
 
   # Story 2.4: build + tag on merge to develop. Push to GHCR is gated behind the
   # repository variable SQL_SERVICE_PUBLISH == 'true' (GHCR not yet confirmed by the team).
