@@ -3,10 +3,17 @@ server:
 spring:
   application.name: commit-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/commit_db}
+    username: ${SPRING_DATASOURCE_USERNAME:}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
   jpa.hibernate.ddl-auto: validate
+  jackson.property-naming-strategy: SNAKE_CASE
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet.multipart:
+    max-file-size: ${COMMIT_MAX_ZIP_SIZE:10MB}
+    max-request-size: ${COMMIT_MAX_ZIP_SIZE:10MB}
 springdoc:
   api-docs.path: /v3/api-docs
   swagger-ui.path: /swagger-ui.html
@@ -17,11 +24,18 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
-hf:
-  api-token: ${HF_API_TOKEN:}
-  model: ${HF_MODEL:}
-  timeout: ${HF_TIMEOUT:10s}
-  retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
-qdrant:
-  host: ${QDRANT_HOST:qdrant}
-  port: ${QDRANT_PORT:6334}
+# Model service (FastAPI): POST {url}/generate {"diff": "..."} -> {"message": "..."}
+commit:
+  model:
+    url: ${COMMIT_MODEL_URL:http://localhost:8000}
+    connect-timeout: ${COMMIT_MODEL_CONNECT_TIMEOUT:2s}
+    read-timeout: ${COMMIT_MODEL_READ_TIMEOUT:20s}
+    retry-max-attempts: ${COMMIT_MODEL_RETRY_MAX_ATTEMPTS:2}
+    # The fine-tuned model has a short context: the diff is cut to these limits before it is sent.
+    max-diff-chars: ${COMMIT_MODEL_MAX_DIFF_CHARS:3500}
+    max-diff-chars-per-file: ${COMMIT_MODEL_MAX_DIFF_CHARS_PER_FILE:1500}
+  # Limits applied while reading the uploaded ZIP (uncompressed sizes, so a ZIP bomb is rejected).
+  upload:
+    max-files: ${COMMIT_MAX_FILES:500}
+    max-file-bytes: ${COMMIT_MAX_FILE_BYTES:200000}
+    max-total-bytes: ${COMMIT_MAX_TOTAL_BYTES:10000000}
