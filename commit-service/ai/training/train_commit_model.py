@@ -34,6 +34,9 @@ def _ensure(module, spec):
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", spec])
 
 
+# Kaggle ships an old torchao that recent peft versions refuse to import next to; LoRA does not need it.
+subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "torchao"], capture_output=True)
+
 for _module, _spec in [("peft", "peft>=0.13"), ("sacrebleu", "sacrebleu"), ("rouge_score", "rouge-score"),
                        ("requests", "requests")]:
     _ensure(_module, _spec)
