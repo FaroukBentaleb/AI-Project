@@ -72,6 +72,26 @@ services:
       retries: 10
       start_period: 30s
 
+  # Commit-message model behind POST /generate. Serves the rule-based fallback until a trained adapter is placed in
+  # commit-service/ai/model/adapter and COMMIT_MODEL_REAL=1 is set (see commit-service/ai/README.md).
+  commit-model:
+    build:
+      context: ./commit-service/ai
+      args:
+        WITH_MODEL: ${COMMIT_MODEL_REAL:-0}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./commit-service/ai/model:/app/model:ro
+      - commit-model-cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      # The first start downloads the base model (~1 GB) when the real model is enabled.
+      start_period: 30s
+
   commit-service:
     build: ./commit-service
     ports:
@@ -81,17 +101,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${COMMIT_DB}
       SPRING_DATASOURCE_USERNAME: ${COMMIT_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${COMMIT_DB_PASSWORD}
-      HF_API_TOKEN: ${HF_API_TOKEN}
-      HF_MODEL: ${HF_MODEL}
+      COMMIT_MODEL_URL: http://commit-model:8000
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
-      QDRANT_HOST: qdrant
-      QDRANT_PORT: 6334
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-      qdrant:
+      commit-model:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/actuator/health"]
@@ -220,3 +237,4 @@ services:
 volumes:
   postgres-data:
   qdrant-storage:
+  commit-model-cache:

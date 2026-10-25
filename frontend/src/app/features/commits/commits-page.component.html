@@ -1,0 +1,182 @@
+<div class="drop-overlay" [class.show]="pageDragging()" aria-hidden="true">
+  <div class="overlay-card">
+    <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></svg>
+    <strong>Drop your ZIP anywhere</strong>
+    <span>We'll compare it with your previous upload</span>
+  </div>
+</div>
+
+<main class="page">
+  <header class="hero">
+    <h1>Commit message generator</h1>
+    <p>
+      Drop a ZIP of your project. It is compared with the previous upload of the same project and the changes are
+      turned into a commit message.
+    </p>
+  </header>
+
+  @if (error()) {
+    <div class="alert" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="error.set('')" aria-label="Dismiss this message">✕</button>
+    </div>
+  }
+
+  <div class="layout">
+    <aside class="panel upload">
+      <h2><span class="step">1</span> Upload</h2>
+
+      <label class="field">
+        <span>Project</span>
+        <input type="text" [value]="project()" (input)="setProject($any($event.target).value)" maxlength="100"
+               placeholder="e.g. my-website" autocomplete="off" [disabled]="busy()" />
+      </label>
+      @if (projects().length > 0) {
+        <div class="chips" role="group" aria-label="Existing projects">
+          @for (name of projects(); track name) {
+            <button type="button" class="chip" [class.active]="name.toLowerCase() === project().trim().toLowerCase()"
+                    (click)="setProject(name)" [disabled]="busy()">{{ name }}</button>
+          }
+        </div>
+      }
+
+      <app-drop-zone [file]="file()" [disabled]="busy()" (fileChange)="file.set($event)"
+                     (rejected)="error.set($event)" />
+
+      @if (busy()) {
+        <div class="progress" role="progressbar" [attr.aria-valuenow]="phase() === 'uploading' ? progress() : null"
+             aria-valuemin="0" aria-valuemax="100">
+          <div class="bar" [class.indeterminate]="phase() === 'analysing'"
+               [style.width.%]="phase() === 'uploading' ? progress() : 100"></div>
+        </div>
+        <p class="status">
+          {{ phase() === 'uploading' ? 'Uploading… ' + progress() + '%' : 'Comparing with the previous upload and writing the message…' }}
+        </p>
+      }
+
+      <button type="button" class="primary" (click)="generate()" [disabled]="!canGenerate()">
+        {{ busy() ? 'Working…' : 'Generate commit message' }}
+      </button>
+      @if (!busy() && !canGenerate()) {
+        <p class="tip">{{ !project().trim() ? 'Name the project, then add its ZIP.' : 'Add the project ZIP to continue.' }}</p>
+      } @else if (!busy()) {
+        <p class="tip">The first upload of a project is described as a whole; later ones only show what changed.</p>
+      }
+    </aside>
+
+    <section class="results">
+      @if (current(); as c) {
+        <article class="panel result" #result aria-live="polite">
+          <div class="result-head">
+            <div>
+              <h2><span class="step">2</span> {{ c.project }}</h2>
+              <span class="muted" [attr.title]="c.created_at">{{ ago(c.created_at) }}</span>
+            </div>
+            <div class="badges">
+              @if (c.initial) { <span class="badge">first upload</span> }
+              @if (c.truncated) { <span class="badge warn" title="The diff was too long for the model and was shortened before it was sent">diff shortened</span> }
+              @if (c.message_edited) { <span class="badge">edited</span> }
+            </div>
+          </div>
+
+          <div class="commit-box">
+            @if (!editing()) {
+              <div class="msg">
+                @if (split(c.message).type; as t) {
+                  <span class="type t-{{ t }}">{{ t }}</span>
+                }
+                <span class="subject">{{ split(c.message).subject }}</span>
+              </div>
+              <div class="actions">
+                <button type="button" (click)="startEdit()">Edit</button>
+                <button type="button" (click)="copy('message', c.message)">
+                  {{ copied() === 'message' ? 'Copied ✓' : 'Copy message' }}
+                </button>
+                <button type="button" (click)="copy('command', gitCommand(c.message))">
+                  {{ copied() === 'command' ? 'Copied ✓' : 'Copy git command' }}
+                </button>
+              </div>
+            } @else {
+              <textarea rows="3" [value]="draft()" (input)="draft.set($any($event.target).value)" maxlength="2000"
+                        aria-label="Commit message" (keydown.control.enter)="saveEdit()"></textarea>
+              <div class="actions">
+                <button type="button" class="primary small" (click)="saveEdit()" [disabled]="!draft().trim()">Save</button>
+                <button type="button" (click)="cancelEdit()">Cancel</button>
+                <span class="counter" [class.warn]="draft().split('\n')[0].length > 72">
+                  {{ draft().split('\n')[0].length }}/72 on the first line
+                </span>
+              </div>
+            }
+          </div>
+
+          <div class="chips stats">
+            <span class="stat">{{ c.files_changed }} of {{ c.file_count }} files changed</span>
+            <span class="stat add">+{{ stats().additions }}</span>
+            <span class="stat del">−{{ stats().deletions }}</span>
+          </div>
+
+          <app-diff-viewer [diff]="c.diff" />
+        </article>
+      } @else {
+        <div class="panel placeholder">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="8" /><path d="M4 32h20M40 32h20" />
+          </svg>
+          <h2>Your commit message will appear here</h2>
+          <p>Upload a ZIP on the left, or open an earlier commit from the history below.</p>
+        </div>
+      }
+
+      <section class="panel history">
+        <div class="history-head">
+          <h2>History</h2>
+          <span class="count">{{ history().length }}</span>
+        </div>
+        @if (projects().length > 1) {
+          <div class="chips" role="group" aria-label="Filter by project">
+            <button type="button" class="chip" [class.active]="!filter()" (click)="setFilter('')">All</button>
+            @for (name of projects(); track name) {
+              <button type="button" class="chip" [class.active]="filter() === name" (click)="setFilter(name)">{{ name }}</button>
+            }
+          </div>
+        }
+        @if (history().length === 0) {
+          <p class="empty">No commits yet. Everything you generate shows up here.</p>
+        }
+        <ul class="timeline">
+          @for (item of history(); track item.id) {
+            <li [class.selected]="item.id === current()?.id">
+              <button type="button" class="item" (click)="open(item.id)">
+                <span class="dot t-{{ typeOf(item.message) }}"></span>
+                <span class="item-body">
+                  <span class="line1">
+                    @if (split(item.message).type; as t) {
+                      <span class="type t-{{ t }}">{{ t }}</span>
+                    }
+                    <span class="subject">{{ split(item.message).subject }}</span>
+                  </span>
+                  <span class="meta">
+                    {{ item.project }} · {{ ago(item.created_at) }} · {{ item.files_changed }}
+                    {{ item.files_changed === 1 ? 'file' : 'files' }}@if (item.initial) { · first upload }
+                  </span>
+                </span>
+              </button>
+              @if (confirmDeleteId() === item.id) {
+                <span class="confirm">
+                  Delete?
+                  <button type="button" class="danger" (click)="remove(item)">Yes</button>
+                  <button type="button" (click)="confirmDeleteId.set(null)">No</button>
+                </span>
+              } @else {
+                <button type="button" class="icon-btn" (click)="confirmDeleteId.set(item.id)"
+                        aria-label="Delete this commit">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    </section>
+  </div>
+</main>
