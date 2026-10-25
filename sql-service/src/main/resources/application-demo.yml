@@ -1,0 +1,7 @@
+# Story 8.2 (addendum §G): demo profile. INFO everywhere; only the named "sql.generation" logger may go to DEBUG.
+logging.level:
+  root: INFO
+  sql.generation: ${SQL_GENERATION_LOG_LEVEL:INFO}
+# LLM-down scenario (§G 5.5): true points generation (not embeddings) at a dead host, so /generate returns
+# 503 LLM_UNAVAILABLE while the token stays configured (not LLM_NOT_CONFIGURED). Manual save keeps indexing.
+sql.demo.llm-dead-host: ${SQL_DEMO_LLM_DEAD_HOST:false}

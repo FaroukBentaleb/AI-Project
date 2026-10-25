@@ -1,0 +1,11 @@
+{
+  "_note": "Story 8.3 UJ-3 fixture. The domain (warehouse shipments / carriers) is absent from seed/schema.sql and the seed corpus, so the first prompt finds no similar query. Table names are deliberately non-conventional (wh_ prefix) so an ungrounded model cannot guess them.",
+  "first_prompt": "late shipments per carrier this month",
+  "follow_up_prompt": "which carriers had the most late shipments this month",
+  "saved": {
+    "title": "Late shipments per carrier this month",
+    "description": "Shipments delivered after their promised date, counted per carrier for the current month.",
+    "sql_content": "SELECT c.carrier_name, COUNT(*) AS late_shipments\nFROM wh_shipments s\nJOIN wh_carriers c ON c.carrier_id = s.carrier_id\nWHERE s.delivered_at > s.promised_at\n  AND s.shipped_at >= date_trunc('month', CURRENT_DATE)\nGROUP BY c.carrier_name\nORDER BY late_shipments DESC",
+    "tables": ["wh_shipments", "wh_carriers"]
+  }
+}

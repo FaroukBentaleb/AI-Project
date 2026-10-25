@@ -1,0 +1,2 @@
+# Tests: no Seed Corpus by default (shared PostgreSQL across ITs). SeedCorpusIT turns it on explicitly.
+sql.seed.enabled: false

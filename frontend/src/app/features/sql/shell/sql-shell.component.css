@@ -1,0 +1,70 @@
+:host {
+  --sql-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sql-font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sql-code-bg: #020712;
+  --sql-bg: #050b18;
+  --sql-surface: #0a1528;
+  --sql-surface-raised: #12223f;
+  --sql-overlay: #020712b3;
+  --sql-border: #28406a;
+  --sql-input-border: #5b77a3;
+  --sql-text-primary: #f4f8ff;
+  --sql-text-muted: #a5b8d1;
+  --sql-text-placeholder: #8ea3bf;
+  --sql-accent: #22d3ee;
+  --sql-accent-hover: #5ee0f3;
+  --sql-accent-text: #021219;
+  --sql-accent-disabled: #145f6c;
+  --sql-accent-disabled-text: #b8eef7;
+  --sql-accent-tint: #22d3ee24;
+  --sql-success: #4ade80;
+  --sql-danger: #ff6b86;
+  --sql-warning: #facc15;
+  --sql-info: #b49cff;
+  --sql-neutral: #94a3b8;
+  --sql-badge-danger-text: #ff8aa0;
+
+  display: block;
+  min-height: 100vh;
+  background: var(--sql-bg);
+  color: var(--sql-text-primary);
+  font: 400 14px/1.5 var(--sql-font-ui);
+}
+
+.module-header {
+  box-sizing: border-box; height: 52px; padding: 0 20px; display: flex; align-items: center; gap: 16px;
+  background: var(--sql-surface); border-bottom: 1px solid var(--sql-border);
+}
+.module-name { font-weight: 600; color: var(--sql-text-primary); }
+.tabs { display: flex; height: 100%; gap: 4px; }
+.tab {
+  display: flex; align-items: center; padding: 0 10px; height: 100%; box-sizing: border-box;
+  color: var(--sql-text-muted); text-decoration: none; border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--sql-text-primary); }
+.tab.active { color: var(--sql-text-primary); border-bottom-color: var(--sql-accent); }
+.spacer { flex: 1; }
+
+.user { position: relative; }
+.user-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 2px; cursor: pointer;
+  background: transparent; color: var(--sql-text-primary); font: 500 13px/1.4 var(--sql-font-ui);
+  border: 1px solid var(--sql-input-border); border-radius: 9999px;
+}
+.user-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar {
+  width: 22px; height: 22px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--sql-surface-raised); color: var(--sql-accent); font-weight: 600; font-size: 12px;
+}
+.user-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); min-width: 200px; padding: 4px; z-index: 900;
+  background: var(--sql-surface-raised); border: 1px solid var(--sql-border); border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+.menu-item {
+  width: 100%; text-align: left; padding: 6px 10px; border: 0; border-radius: 4px; cursor: pointer;
+  background: transparent; color: var(--sql-text-primary); font: 500 13px/1.4 var(--sql-font-ui);
+}
+.menu-item:hover, .menu-item:focus { background: var(--sql-accent-tint); }
+
+.content { padding: 0; }

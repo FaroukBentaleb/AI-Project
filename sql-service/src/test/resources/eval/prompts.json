@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "schema": "seed/schema.sql (customers, products, orders, order_items)",
+  "held_out_audit": "SM-C2 audit (Story 6.6, 2026-10-20): each prompt was compared against the 15 seed_key/title/description entries of seed/seed-queries.json. None restates a seed intent (weekly region orders, week-over-week by region, top customers by revenue, sales by category, average order value per month, inactive customers, customer rank per region, status breakdown last week, daily running total, best-selling products last week, latest order per customer, new customers per month, cancellation rate per region, repeat customers last week). Prompts reuse the same tables on purpose so RAG examples are relevant without being answers. Re-audit whenever a seed query or a prompt changes.",
+  "prompts": [
+    {"id": "P01", "prompt": "List the products that have never been ordered."},
+    {"id": "P02", "prompt": "What is the average number of line items per order, per order status?"},
+    {"id": "P03", "prompt": "Total revenue by customer country, excluding cancelled orders, highest first."},
+    {"id": "P04", "prompt": "For each product category, show the most expensive product and its price."},
+    {"id": "P05", "prompt": "Show orders whose total is above 1000, with the customer name, newest first."},
+    {"id": "P06", "prompt": "Which customers from Germany have bought at least one electronics product?"},
+    {"id": "P07", "prompt": "Median order total for each order status."},
+    {"id": "P08", "prompt": "Products priced above the average price of their own category."},
+    {"id": "P09", "prompt": "Number of orders placed in each hour of the day, across all time."},
+    {"id": "P10", "prompt": "Customers who have placed orders in all four regions."},
+    {"id": "P11", "prompt": "Quantity sold per product category and region over the last 90 days."},
+    {"id": "P12", "prompt": "For each customer, the number of days between account creation and their first order."},
+    {"id": "P13", "prompt": "Average basket value by day of the week, Monday to Sunday."},
+    {"id": "P14", "prompt": "Share of each order's total that comes from furniture items, for delivered orders."},
+    {"id": "P15", "prompt": "Customers whose lifetime spend is more than twice the average customer lifetime spend."}
+  ]
+}
