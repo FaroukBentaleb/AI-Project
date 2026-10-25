@@ -1,9 +1,14 @@
 server.port: ${SERVER_PORT:8084}
 spring.application.name: sql-service
-spring.datasource.url: ${SPRING_DATASOURCE_URL}
-spring.datasource.username: ${SPRING_DATASOURCE_USERNAME}
-spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD}
+# Local runs (IntelliJ / mvn spring-boot:run) read the AI keys from the git-ignored sql-service/.env.local; Docker passes env vars.
+spring.config.import: optional:file:.env.local[.properties],optional:file:sql-service/.env.local[.properties]
+spring.datasource.url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sql_db}
+spring.datasource.username: ${SPRING_DATASOURCE_USERNAME:}
+spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD:}
 spring.jpa.hibernate.ddl-auto: validate
+spring.jackson.property-naming-strategy: SNAKE_CASE
+spring.flyway.enabled: true
+spring.flyway.locations: classpath:db/migration
 springdoc.api-docs.path: /v3/api-docs
 springdoc.swagger-ui.path: /swagger-ui.html
 management.endpoints.web.exposure.include: health,info
@@ -14,6 +19,56 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
 hf.api-token: ${HF_API_TOKEN:}
-hf.model: ${HF_MODEL:}
-hf.timeout: ${HF_TIMEOUT:10s}
-hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
+# Story 6.1: generation model (sqlcoder completion format; a blank HF_MODEL also falls back to this default).
+hf.model: ${HF_MODEL:Qwen/Qwen3-4B}
+hf.timeout: ${HF_TIMEOUT:5s}
+# One transport attempt: the LLM client never retries (FR-17).
+hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:1}
+# HF Inference Providers text-generation; the client appends /{org}/{name}.
+hf.base-url: ${HF_BASE_URL:https://router.huggingface.co/hf-inference/models}
+hf.max-new-tokens: ${HF_MAX_NEW_TOKENS:1024}
+hf.embedding-model: ${HF_EMBEDDING_MODEL:jina-embeddings-v5-omni-small}
+hf.embedding-api-token: ${JINA_API_KEY:}
+# Sent to Jina as "dimensions"; 384 matches the existing Qdrant collection.
+hf.embedding-dimension: ${HF_EMBEDDING_DIMENSION:384}
+hf.embedding-timeout: ${HF_EMBEDDING_TIMEOUT:2s}
+# OpenAI-compatible embeddings endpoint (Jina); the client POSTs to it as-is.
+hf.embedding-base-url: ${HF_EMBEDDING_BASE_URL:https://api.jina.ai/v1/embeddings}
+qdrant:
+  host: ${QDRANT_HOST:localhost}
+  port: ${QDRANT_PORT:6334}
+  rest-port: ${QDRANT_REST_PORT:6333}
+  timeout: 1s
+  collection: sql_embeddings
+  bootstrap-retry: ${QDRANT_BOOTSTRAP_RETRY:PT30S}  # ISO-8601: read by @Scheduled
+# Story 6.5: llm reports config + last-call status, no live calls. Both stay out of the root health (HealthGroupsConfig).
+management.endpoint.health.group.dependencies:
+  include: qdrant,llm
+  show-details: always
+# Story 5.4: rows / point ids handled per Reconciliation batch.
+sql.reconcile.batch-size: ${SQL_RECONCILE_BATCH_SIZE:100}
+# Story 5.5 (FR-26): load the Seed Corpus (seed/seed-queries.json) at startup; idempotent by seed_key.
+sql.seed.enabled: ${SQL_SEED_ENABLED:true}
+# Story 6.1 (FR-20): prompt templates under classpath:prompts/<version>/.
+sql.prompt.version: ${SQL_PROMPT_VERSION:v1}
+# Story 6.3 (FR-17): hard generation deadline, below the gateway's 15 s route timeout. LLM call 2 is skipped
+# when the remaining time cannot fit a full hf.timeout.
+sql.generation.deadline: ${SQL_GENERATION_DEADLINE:13s}
+# Story 6.4 (FR-14, FR-36): RAG grounding. Up to top-k Indexed Queries with cosine score >= threshold become
+# Examples. The threshold is a first estimate (OQ-7), tuned in the SM-3 baseline run.
+sql.rag.enabled: ${SQL_RAG_ENABLED:true}
+sql.rag.top-k: ${SQL_RAG_TOP_K:5}
+sql.rag.threshold: ${SQL_RAG_THRESHOLD:0.5}
+# Story 6.5 (addendum G): INFO by default; the NFR7 generation line is on the named logger "sql.generation",
+# which alone can be raised to DEBUG (SQL_GENERATION_LOG_LEVEL) for the demo.
+logging.level:
+  root: INFO
+  sql.generation: ${SQL_GENERATION_LOG_LEVEL:INFO}
+
+
+groq.api-key: ${GROQ_API_KEY:}
+groq.base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1/chat/completions}
+groq.model: ${GROQ_MODEL:openai/gpt-oss-20b}
+groq.timeout: ${GROQ_TIMEOUT:8s}
+# gpt-oss is a reasoning model: "low" keeps thinking from eating max-new-tokens. Blank for non-reasoning models.
+groq.reasoning-effort: ${GROQ_REASONING_EFFORT:low}

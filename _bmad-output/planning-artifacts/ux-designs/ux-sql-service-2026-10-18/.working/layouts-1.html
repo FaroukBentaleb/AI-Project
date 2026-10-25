@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevAssist Hub · SQL module — layout directions (round 1)</title>
+<style>
+  :root{--page:#d9d9d9;--frame:#bdbdbd;--bg:#f4f4f4;--box:#ffffff;--line:#9e9e9e;--soft:#e6e6e6;--mid:#c8c8c8;--ink:#222;--muted:#666;--dark:#444;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  header.page{max-width:1100px;margin:0 auto;padding:32px 16px 8px}
+  header.page h1{margin:0 0 6px;font-size:24px}
+  header.page p{margin:0;color:var(--muted);max-width:760px}
+  section.dir{max-width:1100px;margin:32px auto;padding:0 16px}
+  section.dir h2{font-size:20px;margin:0 0 6px;border-top:2px solid var(--dark);padding-top:16px}
+  section.dir .why{max-width:820px;margin:0 0 6px}
+  section.dir .tradeoff{max-width:820px;margin:0 0 16px;color:var(--muted);font-size:13px}
+  h3.screen{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:20px 0 6px}
+  .scale{overflow:hidden;border-radius:8px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .browser{width:1280px;zoom:.83;background:var(--frame);border:1px solid #888;border-radius:8px;overflow:hidden}
+  @media (max-width:1100px){.browser{zoom:.6}} @media (max-width:800px){.browser{zoom:.35}}
+  .chrome{height:34px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#b0b0b0}
+  .dot{width:11px;height:11px;border-radius:50%;background:#8a8a8a}
+  .url{flex:1;margin-left:12px;height:20px;background:#e8e8e8;border-radius:4px;font-size:12px;color:#555;padding:1px 10px}
+  .app{background:var(--bg);min-height:640px}
+  /* shared atoms */
+  .mh{display:flex;align-items:center;gap:16px;padding:0 20px;height:52px;background:var(--box);border-bottom:1px solid var(--line)}
+  .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
+  .logo i{display:inline-block;width:22px;height:22px;background:var(--mid);border:1px solid var(--line);border-radius:4px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;background:var(--soft)}
+  .spacer{flex:1}
+  .tabs{display:flex;gap:2px;height:100%;align-items:stretch}
+  .tabs span{display:flex;align-items:center;padding:0 14px;color:var(--muted);border-bottom:3px solid transparent}
+  .tabs span.on{color:var(--ink);font-weight:600;border-bottom-color:var(--dark)}
+  .btn{display:inline-block;border:1px solid var(--line);background:var(--soft);border-radius:5px;padding:4px 10px;font-size:12px;white-space:nowrap}
+  .btn.pri{background:var(--dark);color:#fff;border-color:var(--dark)}
+  .input{border:1px solid var(--line);background:var(--box);border-radius:5px;padding:6px 10px;color:#888;font-size:13px}
+  .sel{border:1px solid var(--line);background:var(--box);border-radius:5px;padding:4px 8px;font-size:12px;color:#444;white-space:nowrap}
+  .sel::after{content:" ▾"}
+  .badge{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:11px;background:var(--soft);white-space:nowrap}
+  .badge.warn{background:#5a5a5a;color:#fff;border-color:#5a5a5a}
+  .badge.dep{background:transparent;border-style:dashed;text-decoration:line-through}
+  .tag{display:inline-block;border-radius:3px;padding:0 6px;font-size:11px;background:var(--mid);margin-right:3px}
+  pre.sql{margin:0;font:12px/1.5 ui-monospace,Consolas,"Cascadia Mono",monospace;background:#ececec;border:1px solid var(--mid);border-radius:5px;padding:8px 10px;white-space:pre;overflow:hidden;color:#333}
+  pre.sql.dark{background:#3a3a3a;color:#e6e6e6;border-color:#2a2a2a}
+  .muted{color:var(--muted)} .sm{font-size:12px} .xs{font-size:11px}
+  .note{border:1px dashed var(--line);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--muted);background:repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#eee 6px,#eee 12px)}
+  .anno{font-size:11px;color:#fff;background:#666;border-radius:3px;padding:1px 6px;display:inline-block}
+  .card{background:var(--box);border:1px solid var(--line);border-radius:6px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .h{font-weight:600}
+  .safety{border-left:4px solid var(--dark);background:var(--box);padding:8px 12px;font-size:12px}
+  .pager{display:flex;gap:4px;align-items:center;justify-content:center;font-size:12px}
+  .pager span{border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:var(--box)}
+  .pager span.on{background:var(--dark);color:#fff}
+  textarea.ta{display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:var(--box);font:13px/1.5 system-ui,sans-serif;padding:10px;resize:none;color:#333}
+  ul.clean{list-style:none;margin:0;padding:0}
+  a{color:var(--ink)}
+  /* D1 */
+  .d1 .wrap{max-width:980px;margin:0 auto;padding:20px}
+  .d1 .fbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--box);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:10px 0}
+  .d1 .card{padding:14px 16px;margin-bottom:10px}
+  /* D2 */
+  .d2 .shell{display:flex;min-height:640px}
+  .d2 aside{width:270px;background:#e2e2e2;border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .d2 aside .nav div{padding:7px 16px;font-size:13px;color:#444}
+  .d2 aside .nav div.on{background:#cfcfcf;font-weight:600;border-left:3px solid var(--dark);padding-left:13px}
+  .d2 aside .lst div{padding:5px 16px;font-size:12px;display:flex;justify-content:space-between;gap:6px;white-space:nowrap;overflow:hidden}
+  .d2 aside .lst div.on{background:var(--box);font-weight:600}
+  .d2 aside .sect{padding:12px 16px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .d2 main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .d2 .topbar{height:46px;display:flex;align-items:center;gap:10px;padding:0 18px;background:var(--box);border-bottom:1px solid var(--line)}
+  /* D3 */
+  .d3 table{width:100%;border-collapse:collapse;font-size:12px;background:var(--box)}
+  .d3 th{text-align:left;font-weight:600;background:#e4e4e4;border-bottom:1px solid var(--line);padding:6px 8px;color:#444;white-space:nowrap}
+  .d3 td{border-bottom:1px solid #ddd;padding:5px 8px;vertical-align:middle;white-space:nowrap}
+  .d3 tr.sel td{background:#e9e9e9}
+  .d3 tr.exp td{background:#f0f0f0;padding:6px 8px 10px 34px}
+  .d3 .cmd{display:flex;gap:8px;align-items:center;background:var(--box);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .d3 .rtabs{display:flex;gap:2px;border-bottom:1px solid var(--line)}
+  .d3 .rtabs span{padding:7px 14px;font-size:13px;color:var(--muted);border:1px solid transparent;border-bottom:none;border-radius:5px 5px 0 0}
+  .d3 .rtabs span.on{background:var(--box);border-color:var(--line);color:var(--ink);font-weight:600;margin-bottom:-1px}
+  footer{max-width:1100px;margin:40px auto 60px;padding:0 16px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>DevAssist Hub · SQL module — layout directions (round 1)</h1>
+  <p>Grayscale, low-fidelity wireframes. They show structure, density and navigation only. Colour, type and the dark theme come later. Each direction is shown on the <b>Library</b> and <b>Generate</b> screens. The module runs on its own inside a plain router-outlet, so each layout carries its own small header: the module name, module navigation and the <span class="chip">sami ▾</span> identity chip.</p>
+</header>
+
+<!-- ============================ DIRECTION 1 ============================ -->
+<section class="dir d1">
+  <h2>1 · "GitHub list"</h2>
+  <p class="why">A single wide column of query cards with module tabs along the top, like a GitHub issues list. Each card shows its SQL inline, which directly meets "SQL visible without extra clicks". People scanning by title, description and badges get plenty of room to read.</p>
+  <p class="tradeoff"><b>Trade-off:</b> the inline SQL makes cards tall, so only about 3–4 queries fit per screen. Expect paging and scrolling. Generate is a simple top-to-bottom form, so the result sits below the prompt and needs a scroll on smaller screens.</p>
+
+  <h3 class="screen">A · Library</h3>
+  <div class="scale"><div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">devassist.local/sql/library</span></div>
+    <div class="app">
+      <div class="mh">
+        <span class="logo"><i></i>SQL</span>
+        <div class="tabs"><span class="on">Library</span><span>Generate</span><span>Validate</span></div>
+        <span class="spacer"></span>
+        <span class="btn pri">+ New query</span>
+        <span class="chip">sami ▾</span>
+      </div>
+      <div class="wrap">
+        <div class="row"><div class="input" style="flex:1">Search titles, descriptions, SQL…</div><span class="sel">Sort: Most used</span></div>
+        <div class="fbar">
+          <span class="sm muted">Filters:</span>
+          <span class="sel">Tags</span><span class="sel">Author</span>
+          <span class="btn">☐ LLM-generated</span><span class="btn">☑ Read-only only</span><span class="btn">☐ Show deprecated</span>
+          <span class="spacer"></span><span class="xs muted">38 queries · page 1 of 4</span>
+        </div>
+
+        <div class="card">
+          <div class="row"><span class="h">Weekly orders by region</span><span class="badge">LLM-generated</span><span class="spacer"></span><span class="xs muted">Used 14× · 2 weeks ago</span><span class="btn">⧉ Copy</span></div>
+          <div class="sm muted" style="margin:4px 0 8px">Order count per region for the last 7 days, for the Monday ops sync.</div>
+          <pre class="sql">SELECT r.name AS region, COUNT(o.id) AS orders
+FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at &gt;= now() - interval '7 days'
+GROUP BY r.name ORDER BY orders DESC;</pre>
+          <div class="row" style="margin-top:8px"><span class="xs muted">by sami</span><span class="tag">orders</span><span class="tag">reporting</span><span class="tag">weekly</span></div>
+        </div>
+
+        <div class="card">
+          <div class="row"><span class="h">Top customers by revenue</span><span class="spacer"></span><span class="xs muted">Used 9× · 3 days ago</span><span class="btn">⧉ Copy</span></div>
+          <div class="sm muted" style="margin:4px 0 8px">Top 20 customers by paid order total, current quarter.</div>
+          <pre class="sql">SELECT c.id, c.name, SUM(o.total) AS revenue
+FROM customers c JOIN orders o ON o.customer_id = c.id
+WHERE o.status = 'paid' AND o.created_at &gt;= date_trunc('quarter', now())
+GROUP BY c.id, c.name ORDER BY revenue DESC LIMIT 20;</pre>
+          <div class="row" style="margin-top:8px"><span class="xs muted">by leila</span><span class="tag">customers</span><span class="tag">finance</span></div>
+        </div>
+
+        <div class="card" style="opacity:.75">
+          <div class="row"><span class="h">Archive cancelled orders</span><span class="badge warn">Not read-only</span><span class="badge dep">Deprecated</span><span class="spacer"></span><span class="xs muted">Used 2× · 5 months ago</span><span class="btn">⧉ Copy</span></div>
+          <div class="sm muted" style="margin:4px 0 8px">Moves cancelled orders older than 90 days into orders_archive. Replaced by the nightly job.</div>
+          <pre class="sql">INSERT INTO orders_archive SELECT * FROM orders
+WHERE status = 'cancelled' AND created_at &lt; now() - interval '90 days';</pre>
+          <div class="row" style="margin-top:8px"><span class="xs muted">by karim</span><span class="tag">orders</span><span class="tag">maintenance</span></div>
+        </div>
+
+        <div class="pager" style="margin:14px 0"><span>‹ Prev</span><span class="on">1</span><span>2</span><span>3</span><span>4</span><span>Next ›</span></div>
+        <div class="note"><b>Empty state:</b> "No saved queries match these filters." [Clear filters] · or, with an empty library: "Your team hasn't saved any queries yet." [Generate one] [New query]</div>
+      </div>
+    </div>
+  </div></div>
+
+  <h3 class="screen">B · Generate</h3>
+  <div class="scale"><div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">devassist.local/sql/generate</span></div>
+    <div class="app">
+      <div class="mh">
+        <span class="logo"><i></i>SQL</span>
+        <div class="tabs"><span>Library</span><span class="on">Generate</span><span>Validate</span></div>
+        <span class="spacer"></span>
+        <span class="btn pri">+ New query</span>
+        <span class="chip">sami ▾</span>
+      </div>
+      <div class="wrap" style="max-width:820px">
+        <div class="h" style="font-size:16px">Describe the query you need</div>
+        <textarea class="ta" rows="4" style="margin-top:8px">orders per region last week vs the week before</textarea>
+        <div class="row" style="margin-top:6px"><span class="xs muted">Don't include personal data — prompts and team examples are sent to an external AI model.</span><span class="spacer"></span><span class="xs muted">47 / 1000</span></div>
+        <div style="margin:10px 0 20px"><span class="btn pri">Generate SQL</span></div>
+
+        <div class="card" style="padding:14px 16px">
+          <div class="row"><span class="h">Generated SQL</span><span class="spacer"></span><span class="btn">⧉ Copy</span><span class="btn pri">Save to library</span></div>
+          <pre class="sql" style="margin-top:8px">SELECT r.name AS region,
+  COUNT(*) FILTER (WHERE o.created_at &gt;= date_trunc('week', now()) - interval '1 week') AS last_week,
+  COUNT(*) FILTER (WHERE o.created_at &lt;  date_trunc('week', now()) - interval '1 week') AS week_before
+FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at &gt;= date_trunc('week', now()) - interval '2 weeks'
+  AND o.created_at &lt;  date_trunc('week', now())
+GROUP BY r.name ORDER BY last_week DESC;</pre>
+          <div style="margin-top:12px" class="h sm">Warnings</div>
+          <ul class="sm" style="margin:4px 0 10px;padding-left:18px">
+            <li>Only 1 similar query found — verify table names in the generated SQL.</li>
+          </ul>
+          <div class="safety"><b>Safety note:</b> Generated SQL is not run. Check it before use. Validate it in Validate before running it against production.</div>
+          <div style="margin-top:12px" class="h sm">Examples used</div>
+          <ul class="sm" style="margin:4px 0 0;padding-left:18px">
+            <li><a href="#">Weekly orders by region</a> <span class="muted">· sami</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============================ DIRECTION 2 ============================ -->
+<section class="dir d2">
+  <h2>2 · "Supabase split"</h2>
+  <p class="why">A sidebar stays on the left with the module nav and a searchable list of saved queries by title. The main pane shows whichever query is selected, or the generator, like an SQL-editor workspace. Moving between queries takes one click and keeps your place, and the Generate split puts the prompt and its output side by side.</p>
+  <p class="tradeoff"><b>Trade-off:</b> the sidebar only shows titles, so you have to select a query to see its SQL. That breaks "SQL visible without extra clicks" for browsing, but suits people who already know what they want. Filters have to be squeezed into the sidebar, and the main pane is narrower.</p>
+
+  <h3 class="screen">A · Library (query selected)</h3>
+  <div class="scale"><div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">devassist.local/sql/library/weekly-orders-by-region</span></div>
+    <div class="app"><div class="shell">
+      <aside>
+        <div class="row" style="padding:14px 16px 10px"><span class="logo"><i></i>SQL</span><span class="spacer"></span><span class="chip">sami ▾</span></div>
+        <div class="nav">
+          <div class="on">▤ Library</div><div>✦ Generate</div><div>✓ Validate</div><div>＋ New query</div>
+        </div>
+        <div class="sect">Saved queries · 38</div>
+        <div style="padding:0 12px 6px"><div class="input sm" style="padding:4px 8px">Filter by title…</div></div>
+        <div class="row" style="padding:0 12px 6px;gap:4px"><span class="sel xs">Tags</span><span class="sel xs">Author</span><span class="sel xs">More</span><span class="sel xs">↕</span></div>
+        <div class="lst">
+          <div class="on"><span>Weekly orders by region</span><span class="xs muted">AI</span></div>
+          <div><span>Top customers by revenue</span><span></span></div>
+          <div><span>Daily signups (30 days)</span><span></span></div>
+          <div><span>Refunds by payment method</span><span class="xs muted">AI</span></div>
+          <div><span>Inventory below threshold</span><span></span></div>
+          <div><span>Average basket size by month</span><span></span></div>
+          <div><span>Active users per plan</span><span class="xs muted">AI</span></div>
+          <div class="muted" style="text-decoration:line-through"><span>Archive cancelled orders</span><span class="xs">⚠</span></div>
+          <div><span>Late shipments by carrier</span><span></span></div>
+          <div><span>Coupons used this month</span><span></span></div>
+        </div>
+        <div class="pager" style="margin:auto 0 12px"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span></div>
+      </aside>
+      <main>
+        <div class="topbar"><span class="xs muted">Library ›</span><span class="h">Weekly orders by region</span><span class="spacer"></span><span class="btn">Edit</span><span class="btn">Validate</span><span class="btn pri">⧉ Copy SQL</span></div>
+        <div style="padding:18px">
+          <div class="row"><span class="badge">LLM-generated</span><span class="badge">Read-only</span><span class="xs muted">Used 14× · 2 weeks ago</span><span class="xs muted">· by sami · updated 3 weeks ago</span></div>
+          <p class="sm" style="margin:10px 0">Order count per region for the last 7 days, for the Monday ops sync.</p>
+          <div class="row" style="margin-bottom:12px"><span class="tag">orders</span><span class="tag">reporting</span><span class="tag">weekly</span></div>
+          <pre class="sql dark" style="min-height:260px;font-size:13px">  1  SELECT r.name AS region,
+  2         COUNT(o.id) AS orders
+  3  FROM orders o
+  4  JOIN regions r ON r.id = o.region_id
+  5  WHERE o.created_at &gt;= now() - interval '7 days'
+  6  GROUP BY r.name
+  7  ORDER BY orders DESC;</pre>
+          <div class="note" style="margin-top:16px"><b>Empty states:</b> no query selected → "Select a query on the left or [Generate one]". No title match in the sidebar → "No queries match 'refund'." [Clear]. Deprecated and Not-read-only queries show a banner above the SQL here.</div>
+        </div>
+      </main>
+    </div></div>
+  </div></div>
+
+  <h3 class="screen">B · Generate (split view)</h3>
+  <div class="scale"><div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">devassist.local/sql/generate</span></div>
+    <div class="app"><div class="shell">
+      <aside>
+        <div class="row" style="padding:14px 16px 10px"><span class="logo"><i></i>SQL</span><span class="spacer"></span><span class="chip">sami ▾</span></div>
+        <div class="nav">
+          <div>▤ Library</div><div class="on">✦ Generate</div><div>✓ Validate</div><div>＋ New query</div>
+        </div>
+        <div class="sect">Saved queries · 38</div>
+        <div style="padding:0 12px 6px"><div class="input sm" style="padding:4px 8px">Filter by title…</div></div>
+        <div class="lst">
+          <div><span>Weekly orders by region</span><span class="xs muted">AI</span></div>
+          <div><span>Top customers by revenue</span><span></span></div>
+          <div><span>Daily signups (30 days)</span><span></span></div>
+          <div><span>Refunds by payment method</span><span class="xs muted">AI</span></div>
+          <div><span>Inventory below threshold</span><span></span></div>
+          <div class="muted" style="text-decoration:line-through"><span>Archive cancelled orders</span><span class="xs">⚠</span></div>
+        </div>
+      </aside>
+      <main>
+        <div class="topbar"><span class="h">Generate SQL from a description</span></div>
+        <div style="display:flex;flex:1;min-height:0">
+          <div style="width:44%;padding:18px;border-right:1px solid var(--line)">
+            <div class="h sm">Prompt</div>
+            <textarea class="ta" rows="6" style="margin-top:6px">orders per region last week vs the week before</textarea>
+            <div class="row" style="margin-top:6px"><span class="xs muted">47 / 1000</span><span class="spacer"></span><span class="btn pri">Generate ⏎</span></div>
+            <div class="xs muted" style="margin-top:8px">Don't include personal data — prompts and team examples are sent to an external AI model.</div>
+            <div class="h sm" style="margin-top:22px">Examples used <span class="muted xs">(team queries sent as context)</span></div>
+            <div class="card" style="padding:8px 10px;margin-top:6px"><a href="#" class="sm h">Weekly orders by region</a><div class="xs muted">by sami · orders, reporting</div></div>
+            <div class="h sm" style="margin-top:18px">Warnings</div>
+            <ul class="sm" style="margin:4px 0;padding-left:18px"><li>Only 1 similar query found — verify table names in the generated SQL.</li></ul>
+          </div>
+          <div style="flex:1;padding:18px;display:flex;flex-direction:column;gap:10px">
+            <div class="row"><span class="h sm">Result</span><span class="badge">LLM-generated</span><span class="spacer"></span><span class="btn">⧉ Copy</span><span class="btn">Validate</span><span class="btn pri">Save to library</span></div>
+            <pre class="sql dark" style="flex:1;min-height:300px;font-size:12.5px">  1  SELECT r.name AS region,
+  2    COUNT(*) FILTER (WHERE o.created_at &gt;= date_trunc('week', now()) - interval '1 week') AS last_week,
+  3    COUNT(*) FILTER (WHERE o.created_at &lt;  date_trunc('week', now()) - interval '1 week') AS week_before
+  4  FROM orders o
+  5  JOIN regions r ON r.id = o.region_id
+  6  WHERE o.created_at &gt;= date_trunc('week', now()) - interval '2 weeks'
+  7    AND o.created_at &lt;  date_trunc('week', now())
+  8  GROUP BY r.name
+  9  ORDER BY last_week DESC;</pre>
+            <div class="safety"><b>Safety note:</b> Generated SQL is not run. Check table and column names and validate it before running it against real data.</div>
+          </div>
+        </div>
+      </main>
+    </div></div>
+  </div></div>
+</section>
+
+<!-- ============================ DIRECTION 3 ============================ -->
+<section class="dir d3">
+  <h2>3 · "Dense table"</h2>
+  <p class="why">Top tabs and a compact table with one row per query: title, tags, author, badges, last used and a copy icon. A preview panel on the right shows the selected query's full SQL, and a row can also expand in place. This packs about 15 queries above the fold and makes sorting and comparison easy. It suits a library that grows past a few dozen entries.</p>
+  <p class="tradeoff"><b>Trade-off:</b> with no selection, the SQL is one click away (select or expand a row). That's a partial fit for "SQL visible without extra clicks", which a preview that follows hover or the keyboard could ease. Descriptions get cut short. Generate puts the result behind tabs, so warnings and examples are easy to miss unless the tab labels show counts.</p>
+
+  <h3 class="screen">A · Library (row selected, preview panel open)</h3>
+  <div class="scale"><div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">devassist.local/sql/library?sort=last_used</span></div>
+    <div class="app">
+      <div class="mh">
+        <span class="logo"><i></i>SQL</span>
+        <div class="tabs"><span class="on">Library</span><span>Generate</span><span>Validate</span></div>
+        <span class="spacer"></span>
+        <span class="btn pri">+ New query</span>
+        <span class="chip">sami ▾</span>
+      </div>
+      <div class="row" style="padding:10px 16px;background:var(--box);border-bottom:1px solid var(--line);gap:6px">
+        <div class="input sm" style="width:300px;padding:4px 8px">Search…</div>
+        <span class="sel">Tags</span><span class="sel">Author</span><span class="sel">LLM-generated: any</span><span class="sel">Read-only: any</span><span class="sel">Deprecated: hidden</span>
+        <span class="spacer"></span><span class="xs muted">38 results</span>
+      </div>
+      <div style="display:flex">
+        <div style="flex:1;min-width:0">
+          <table>
+            <thead><tr><th style="width:18px"></th><th>Title ↕</th><th>Tags</th><th>Author ↕</th><th>Badges</th><th>Last used ↓</th><th></th></tr></thead>
+            <tbody>
+              <tr class="sel"><td>▾</td><td class="h">Weekly orders by region</td><td><span class="tag">orders</span><span class="tag">weekly</span></td><td>sami</td><td><span class="badge">LLM</span></td><td>14× · 2 wk ago</td><td>⧉</td></tr>
+              <tr class="exp"><td colspan="7"><pre class="sql" style="font-size:11px">SELECT r.name AS region, COUNT(o.id) AS orders FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at &gt;= now() - interval '7 days' GROUP BY r.name ORDER BY orders DESC;</pre><span class="xs muted">Expanded row (option A). The panel on the right is option B.</span></td></tr>
+              <tr><td>▸</td><td class="h">Top customers by revenue</td><td><span class="tag">customers</span><span class="tag">finance</span></td><td>leila</td><td></td><td>9× · 3 d ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Daily signups (30 days)</td><td><span class="tag">users</span></td><td>leila</td><td></td><td>21× · 1 d ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Refunds by payment method</td><td><span class="tag">finance</span></td><td>sami</td><td><span class="badge">LLM</span></td><td>6× · 1 wk ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Inventory below threshold</td><td><span class="tag">inventory</span></td><td>karim</td><td></td><td>11× · 4 d ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Average basket size by month</td><td><span class="tag">orders</span><span class="tag">finance</span></td><td>leila</td><td></td><td>3× · 1 mo ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Active users per plan</td><td><span class="tag">users</span><span class="tag">billing</span></td><td>sami</td><td><span class="badge">LLM</span></td><td>8× · 6 d ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Late shipments by carrier</td><td><span class="tag">shipping</span></td><td>karim</td><td></td><td>5× · 2 wk ago</td><td>⧉</td></tr>
+              <tr><td>▸</td><td class="h">Coupons used this month</td><td><span class="tag">marketing</span></td><td>leila</td><td></td><td>4× · 3 wk ago</td><td>⧉</td></tr>
+              <tr style="color:#888"><td>▸</td><td class="h" style="text-decoration:line-through">Archive cancelled orders</td><td><span class="tag">maintenance</span></td><td>karim</td><td><span class="badge warn">Not RO</span> <span class="badge dep">Depr.</span></td><td>2× · 5 mo ago</td><td>⧉</td></tr>
+            </tbody>
+          </table>
+          <div class="row" style="padding:10px 16px"><span class="xs muted">1–10 of 38 · 10 / 25 / 50 per page</span><span class="spacer"></span><div class="pager"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>4</span><span>›</span></div></div>
+          <div class="note" style="margin:0 16px 16px"><b>Empty state:</b> a single table row reading "No queries match these filters · [Clear filters]". Column headers stay visible.</div>
+        </div>
+        <div style="width:380px;border-left:1px solid var(--line);background:var(--box);padding:14px">
+          <div class="row"><span class="h">Weekly orders by region</span><span class="spacer"></span><span class="xs muted">✕</span></div>
+          <div class="row" style="margin:6px 0"><span class="badge">LLM-generated</span><span class="xs muted">Used 14× · 2 weeks ago</span></div>
+          <p class="sm muted" style="margin:6px 0 10px">Order count per region for the last 7 days, for the Monday ops sync.</p>
+          <pre class="sql dark" style="font-size:11.5px">SELECT r.name AS region,
+       COUNT(o.id) AS orders
+FROM orders o
+JOIN regions r
+  ON r.id = o.region_id
+WHERE o.created_at &gt;=
+      now() - interval '7 days'
+GROUP BY r.name
+ORDER BY orders DESC;</pre>
+          <div class="row" style="margin-top:10px"><span class="btn pri">⧉ Copy</span><span class="btn">Open</span><span class="btn">Validate</span></div>
+          <div class="xs muted" style="margin-top:10px">by sami · tags: orders, reporting, weekly</div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <h3 class="screen">B · Generate (command bar + result tabs)</h3>
+  <div class="scale"><div class="browser">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">devassist.local/sql/generate</span></div>
+    <div class="app">
+      <div class="mh">
+        <span class="logo"><i></i>SQL</span>
+        <div class="tabs"><span>Library</span><span class="on">Generate</span><span>Validate</span></div>
+        <span class="spacer"></span>
+        <span class="btn pri">+ New query</span>
+        <span class="chip">sami ▾</span>
+      </div>
+      <div style="padding:16px 20px">
+        <div class="cmd">
+          <span class="muted">✦</span>
+          <div style="flex:1;font-size:14px">orders per region last week vs the week before</div>
+          <span class="xs muted">47 / 1000</span>
+          <span class="btn pri">Generate ⏎</span>
+        </div>
+        <div class="xs muted" style="margin:6px 4px 16px">Don't include personal data — prompts and team examples are sent to an external AI model. · Multi-line: Shift+⏎ expands the bar.</div>
+
+        <div class="rtabs"><span class="on">SQL</span><span>Examples used (1)</span><span>Warnings (1) ⚠</span></div>
+        <div class="card" style="border-top-left-radius:0;padding:14px">
+          <div class="row" style="margin-bottom:8px"><span class="badge">LLM-generated</span><span class="spacer"></span><span class="btn">⧉ Copy</span><span class="btn">Validate</span><span class="btn pri">Save to library</span></div>
+          <pre class="sql dark" style="font-size:12.5px;min-height:200px">SELECT r.name AS region,
+  COUNT(*) FILTER (WHERE o.created_at &gt;= date_trunc('week', now()) - interval '1 week') AS last_week,
+  COUNT(*) FILTER (WHERE o.created_at &lt;  date_trunc('week', now()) - interval '1 week') AS week_before
+FROM orders o JOIN regions r ON r.id = o.region_id
+WHERE o.created_at &gt;= date_trunc('week', now()) - interval '2 weeks'
+  AND o.created_at &lt;  date_trunc('week', now())
+GROUP BY r.name ORDER BY last_week DESC;</pre>
+          <div class="safety" style="margin-top:10px"><b>Safety note:</b> Generated SQL is not run. Check it and validate it before running it. Stays visible under every tab.</div>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:16px">
+          <div style="flex:1">
+            <div class="xs muted" style="margin-bottom:4px">Contents of the "Examples used" tab:</div>
+            <table><thead><tr><th>Saved query</th><th>Author</th><th>Tags</th></tr></thead>
+              <tbody><tr><td><a href="#">Weekly orders by region</a></td><td>sami</td><td><span class="tag">orders</span><span class="tag">reporting</span></td></tr></tbody></table>
+          </div>
+          <div style="flex:1">
+            <div class="xs muted" style="margin-bottom:4px">Contents of the "Warnings" tab:</div>
+            <div class="card sm" style="padding:8px 10px">⚠ Only 1 similar query found — verify table names in the generated SQL.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<footer>Round 1 · structure only · no schema-hint field anywhere (excluded by product decision) · 2026-10-18</footer>
+</body>
+</html>

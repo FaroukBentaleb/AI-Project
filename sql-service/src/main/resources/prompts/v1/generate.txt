@@ -1,0 +1,14 @@
+### Task
+Generate a SQL query to answer [QUESTION]{{prompt}}[/QUESTION]
+
+### Instructions
+- Write a single read-only {{dialect}} SELECT statement (a WITH ... SELECT is allowed).
+- Never write INSERT, UPDATE, DELETE, DDL, or more than one statement.
+- If you cannot answer the question, return 'I do not know'.
+
+### Database Schema
+{{schema}}
+
+### Answer
+Given the database schema, here is the SQL query that [QUESTION]{{prompt}}[/QUESTION]
+[SQL]

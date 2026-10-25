@@ -1,0 +1,18 @@
+# Story 8.2: the Plan B switch (PRD §6 / §7 fallback column, addendum §A and §E). One file flips all three together:
+#   - sql-service: Spring profile "planb" -> hf.timeout 8 s, sql.generation.deadline 20 s
+#   - api-gateway: /api/sql/** route response timeout 22000 ms (other routes unchanged)
+#   - sql-service generation model: SQL_HF_MODEL_PLANB if set, else SQL_HF_MODEL, else defog/sqlcoder-7b-2
+#
+#   docker compose -f docker-compose.yml -f docker-compose.planb.yml up -d sql-service api-gateway     # Plan B on
+#   docker compose up -d sql-service api-gateway                                                        # back to normal
+#
+# Stacks with the stub override; list this file BEFORE docker-compose.e2e.yml so the stub endpoints/model win.
+services:
+  sql-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: demo,planb
+      HF_MODEL: ${SQL_HF_MODEL_PLANB:-${SQL_HF_MODEL:-defog/sqlcoder-7b-2}}
+
+  api-gateway:
+    environment:
+      SQL_ROUTE_RESPONSE_TIMEOUT_MS: 22000

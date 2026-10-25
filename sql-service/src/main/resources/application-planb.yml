@@ -1,0 +1,5 @@
+# Story 8.2 (PRD §6 Plan B, §7 fallback column): latency gives way first. Activated with SPRING_PROFILES_ACTIVE
+# containing "planb" (docker-compose.planb.yml does it, together with the gateway's 22 s route timeout).
+# An explicit HF_TIMEOUT / SQL_GENERATION_DEADLINE environment variable still wins over these values.
+hf.timeout: 8s
+sql.generation.deadline: 20s
