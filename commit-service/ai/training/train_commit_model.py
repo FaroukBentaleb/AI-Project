@@ -24,6 +24,7 @@ import sys
 import time
 from collections import Counter
 from pathlib import Path
+from urllib.parse import quote
 
 
 def _ensure(module, spec):
@@ -80,7 +81,7 @@ DATA_URL = "https://huggingface.co/datasets/bigcode/commitpackft/resolve/main/da
 
 
 def stream_rows(lang, limit):
-    with requests.get(DATA_URL.format(lang=lang), stream=True, timeout=60) as response:
+    with requests.get(DATA_URL.format(lang=quote(lang, safe="")), stream=True, timeout=60) as response:
         response.raise_for_status()
         for i, line in enumerate(response.iter_lines()):
             if i >= limit:
