@@ -1,0 +1,235 @@
+<main class="page">
+  <header class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="pulse"></span> AI CODE REVIEW WORKSPACE</span>
+      <h1>Review code with context.</h1>
+      <p>Catch bugs, risky patterns, and code smells. Each review is grounded in a relevant project standard and saved to your history.</p>
+    </div>
+    <div class="hero-badges">
+      <span class="model-badge"><span class="model-icon">✳</span> Qwen via Groq</span>
+      <span class="rag-badge"><span>⌕</span> RAG enabled</span>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="alert" role="alert">
+      <span class="alert-icon">!</span>
+      <span>{{ error() }}</span>
+      <button type="button" (click)="error.set('')" aria-label="Dismiss error">✕</button>
+    </div>
+  }
+
+  <section class="workflow" aria-label="Review workflow">
+    <div class="workflow-step active"><span class="step-number">01</span><span>Submit code</span></div>
+    <span class="workflow-line"></span>
+    <div class="workflow-step" [class.active]="!!selected()"><span class="step-number">02</span><span>AI analysis</span></div>
+    <span class="workflow-line"></span>
+    <div class="workflow-step" [class.active]="history().length > 0"><span class="step-number">03</span><span>Saved review</span></div>
+  </section>
+
+  <div class="workspace">
+    <section class="panel editor-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="section-kicker">INPUT</span>
+          <h2>{{ editingId() ? 'Update review' : 'Review a snippet' }}</h2>
+        </div>
+        @if (editingId()) {
+          <button type="button" class="text-button" (click)="cancelEdit()" [disabled]="busy()">Cancel edit</button>
+        } @else if (selected()) {
+          <button type="button" class="text-button" (click)="startNew()">＋ New review</button>
+        }
+      </div>
+
+      <label class="field-label" for="example-picker">Try a demo sample</label>
+      <select id="example-picker" class="select demo-select" (change)="chooseExample($any($event.target).value)"
+              [disabled]="busy()">
+        <option value="">Choose an example to load…</option>
+        @for (example of examples; track example.label; let i = $index) {
+          <option [value]="i">{{ example.label }}</option>
+        }
+      </select>
+
+      <div class="editor-toolbar">
+        <label class="field-label" for="language-picker">Language</label>
+        <select id="language-picker" class="select language-select" [value]="language()"
+                (change)="setLanguage($any($event.target).value)" [disabled]="busy()">
+          @for (option of languages; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="code-editor" [class.is-busy]="busy()">
+        <div class="line-numbers" aria-hidden="true">
+          @for (line of lineNumbers(); track line) { <span>{{ line }}</span> }
+        </div>
+        <textarea aria-label="Code to review" spellcheck="false" autocapitalize="off" autocomplete="off"
+                  [value]="code()" (input)="setCode($any($event.target).value)" [disabled]="busy()"
+                  placeholder="// Paste code here or load a demo sample…" maxlength="100000"></textarea>
+      </div>
+
+      <div class="editor-footer">
+        <span>{{ lineCount() }} {{ lineCount() === 1 ? 'line' : 'lines' }} <i>·</i> {{ code().length }} / 100,000 chars</span>
+        <button type="button" class="subtle-button" (click)="copy('code', code())"
+                [disabled]="!code()" aria-label="Copy code">
+          {{ copied() === 'code' ? 'Copied ✓' : 'Copy code' }}
+        </button>
+      </div>
+
+      @if (busy()) {
+        <div class="analysis-progress" role="status">
+          <span class="spinner"></span>
+          <span>{{ editingId() ? 'Updating your review…' : 'Finding context and reviewing your code…' }}</span>
+        </div>
+      }
+
+      <button type="button" class="primary-button" (click)="submit()" [disabled]="busy() || !code().trim()">
+        @if (busy()) {
+          <span class="button-spinner"></span> Analyzing code…
+        } @else {
+          <span class="sparkle">✳</span> {{ editingId() ? 'Re-run and save review' : 'Analyze code' }}
+        }
+      </button>
+      <p class="privacy-note"><span>◈</span> Your code is sent to the configured AI provider for analysis.</p>
+    </section>
+
+    <section class="result-column">
+      @if (selected(); as review) {
+        <article class="panel review-result" aria-live="polite">
+          <div class="result-top">
+            <div>
+              <span class="section-kicker">ANALYSIS RESULT</span>
+              <h2>Code review <span class="review-id">#{{ review.id }}</span></h2>
+              <p class="result-meta">{{ review.language }} <span>·</span> {{ review.created_at | date:'medium' }}</p>
+            </div>
+            <span class="status-pill"><span class="status-dot"></span>{{ review.status }}</span>
+          </div>
+
+          <div class="finding-stats">
+            <div class="finding-stat">
+              <span class="stat-icon total-icon">≡</span>
+              <div><strong>{{ findingCount() }}</strong><span>flagged findings</span></div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="finding-stat">
+              <span class="stat-icon risk-icon">⚑</span>
+              <div><strong>{{ highRiskCount() }}</strong><span>high / critical</span></div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="finding-stat">
+              <span class="stat-icon context-icon">⌕</span>
+              <div><strong>{{ review.relevance_score * 100 | number:'1.0-0' }}%</strong><span>context match</span></div>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button type="button" class="secondary-button" (click)="editSelected()">Edit &amp; re-run</button>
+            <button type="button" class="secondary-button" (click)="copy('review', review.ai_response)">
+              {{ copied() === 'review' ? 'Copied ✓' : 'Copy review' }}
+            </button>
+          </div>
+
+          <div class="review-sections">
+            @for (section of sections(); track section.title) {
+              <section class="answer-section">
+                <h3><span class="section-mark" [class.findings-mark]="section.title.toLowerCase().includes('finding')"></span>
+                  {{ section.title }}
+                </h3>
+                <div class="answer-content">{{ section.content }}</div>
+              </section>
+            }
+          </div>
+
+          <aside class="context-card">
+            <div class="context-title">
+              <span class="context-symbol">⌕</span>
+              <div><strong>Retrieved project standard</strong><span>Matched with MiniLM embeddings</span></div>
+              <span class="match-score">{{ review.relevance_score * 100 | number:'1.0-0' }}% match</span>
+            </div>
+            <blockquote>{{ review.relevant_standard }}</blockquote>
+            <div class="match-track"><span [style.width.%]="review.relevance_score * 100"></span></div>
+          </aside>
+
+          <details class="submitted-code">
+            <summary>View submitted code <span>{{ review.language }}</span></summary>
+            <pre><code>{{ review.code_snippet }}</code></pre>
+          </details>
+        </article>
+      } @else {
+        <div class="panel empty-result">
+          <div class="empty-art">
+            <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+            <div class="empty-core">✳</div><span class="orbit-dot dot-a"></span><span class="orbit-dot dot-b"></span>
+          </div>
+          <span class="section-kicker">YOUR REVIEW, AT A GLANCE</span>
+          <h2>Ready when you are.</h2>
+          <p>Submit a snippet to see prioritized findings, helpful context, and suggestions you can act on.</p>
+          <div class="empty-tags"><span>Bug detection</span><span>Code smells</span><span>Security signals</span></div>
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="panel history-panel">
+    <div class="history-heading">
+      <div>
+        <span class="section-kicker">YOUR WORKSPACE</span>
+        <h2>Review history <span class="history-count">{{ history().length }}</span></h2>
+      </div>
+      <div class="history-controls">
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input type="search" placeholder="Search code or findings…" [value]="search()"
+                 (input)="search.set($any($event.target).value)" aria-label="Search review history" />
+        </label>
+        <select class="select history-filter" [value]="languageFilter()"
+                (change)="languageFilter.set($any($event.target).value)" aria-label="Filter history by language">
+          <option value="">All languages</option>
+          @for (option of languages; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (loadingHistory() && history().length === 0) {
+      <div class="history-empty"><span class="spinner"></span> Loading saved reviews…</div>
+    } @else if (visibleHistory().length === 0) {
+      <div class="history-empty">
+        <span class="empty-history-icon">⌕</span>
+        <span>{{ history().length ? 'No reviews match these filters.' : 'No saved reviews yet. Your completed analyses will appear here.' }}</span>
+      </div>
+    } @else {
+      <div class="history-list">
+        @for (review of visibleHistory(); track trackReview($index, review)) {
+          <article class="history-row" [class.row-selected]="selected()?.id === review.id">
+            <button type="button" class="history-open" (click)="open(review)" [attr.aria-label]="'Open review ' + review.id">
+              <span class="history-file-icon">{{ review.language.slice(0, 2).toUpperCase() }}</span>
+              <span class="history-main">
+                <span class="history-title">{{ review.code_snippet.split('\n')[0].trim() || 'Code review' }}</span>
+                <span class="history-meta">#{{ review.id }} <i>·</i> {{ review.language }} <i>·</i> {{ review.created_at | date:'short' }}</span>
+              </span>
+              <span class="history-score"><strong>{{ review.relevance_score * 100 | number:'1.0-0' }}%</strong><small>context</small></span>
+            </button>
+            @if (confirmDeleteId() === review.id) {
+              <div class="delete-confirm">
+                <span>Delete this review?</span>
+                <button type="button" class="danger-button" (click)="remove(review)">Delete</button>
+                <button type="button" class="cancel-button" (click)="confirmDeleteId.set(null)">Cancel</button>
+              </div>
+            } @else {
+              <button type="button" class="icon-button" (click)="confirmDeleteId.set(review.id)"
+                      [attr.aria-label]="'Delete review ' + review.id" title="Delete review">×</button>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <footer class="page-footer">
+    <span><span class="footer-pulse"></span> AI-assisted analysis · Always verify findings before applying changes</span>
+    <span>{{ history().length }} {{ history().length === 1 ? 'review' : 'reviews' }} saved</span>
+  </footer>
+</main>

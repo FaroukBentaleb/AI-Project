@@ -96,6 +96,9 @@ services:
     build: ./review-service/ai
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
+      HF_HOME: /root/.cache/huggingface
+    volumes:
+      - review-ai-cache:/root/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -280,4 +283,5 @@ volumes:
   postgres-data:
   qdrant-storage:
   commit-model-cache:
+  review-ai-cache:
   snippet-model-cache:
