@@ -1,0 +1,4 @@
+Your previous answer could not be used: {{reason}}.
+
+Answer again with only one JSON object of the form {"severity": "...", "category": "...", "title": "...", "rationale": "..."}.
+severity must be LOW, MEDIUM, HIGH or CRITICAL. category must be UI, FUNCTIONAL, PERFORMANCE, SECURITY, CRASH, DATA, INTEGRATION or OTHER. title must be 5 to 12 words.

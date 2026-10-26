@@ -150,8 +150,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${BUG_DB}
       SPRING_DATASOURCE_USERNAME: ${BUG_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${BUG_DB_PASSWORD}
-      HF_API_TOKEN: ${HF_API_TOKEN}
-      HF_MODEL: ${HF_MODEL}
+      # bug-service's own triage LLM (any OpenAI-compatible chat endpoint), independent of the shared HF_MODEL.
+      # Defaults: the shared HF token on the Hugging Face router. For Groq: BUG_LLM_BASE_URL=https://api.groq.com/openai/v1.
+      HF_API_TOKEN: ${BUG_LLM_API_KEY:-${HF_API_TOKEN}}
+      HF_MODEL: ${BUG_LLM_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      HF_BASE_URL: ${BUG_LLM_BASE_URL:-https://router.huggingface.co/v1}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
     depends_on:
       postgres:

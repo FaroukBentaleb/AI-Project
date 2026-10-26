@@ -1,11 +1,25 @@
-server.port: ${SERVER_PORT:8083}
-spring.application.name: bug-service
-spring.datasource.url: ${SPRING_DATASOURCE_URL}
-spring.datasource.username: ${SPRING_DATASOURCE_USERNAME}
-spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD}
-spring.jpa.hibernate.ddl-auto: validate
-springdoc.api-docs.path: /v3/api-docs
-springdoc.swagger-ui.path: /swagger-ui.html
+server:
+  port: ${SERVER_PORT:8083}
+spring:
+  application.name: bug-service
+  # Local runs (IntelliJ / mvn spring-boot:run) read the DB login and AI key from the git-ignored bug-service/.env.local
+  # (KEY=value lines, e.g. SPRING_DATASOURCE_PASSWORD=...); Docker passes env vars instead. The IntelliJ run config also
+  # loads that file as an env file, which does not skip '#' lines: keep it free of comments.
+  config.import: optional:file:.env.local[.properties],optional:file:bug-service/.env.local[.properties]
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bug_db}
+    username: ${SPRING_DATASOURCE_USERNAME:}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate.ddl-auto: validate
+    open-in-view: false
+  jackson.property-naming-strategy: SNAKE_CASE
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+springdoc:
+  api-docs.path: /v3/api-docs
+  swagger-ui.path: /swagger-ui.html
 management.endpoints.web.exposure.include: health,info
 eureka:
   instance:
@@ -13,7 +27,19 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
-hf.api-token: ${HF_API_TOKEN:}
-hf.model: ${HF_MODEL:}
-hf.timeout: ${HF_TIMEOUT:10s}
-hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
+# LLM of the triage feature: any OpenAI-compatible chat-completions endpoint. Hugging Face router by default; Groq works
+# too (HF_BASE_URL=https://api.groq.com/openai/v1). A blank model falls back to HfProperties.DEFAULT_MODEL.
+hf:
+  api-token: ${HF_API_TOKEN:}
+  model: ${HF_MODEL:}
+  base-url: ${HF_BASE_URL:https://router.huggingface.co/v1}
+  timeout: ${HF_TIMEOUT:15s}
+  connect-timeout: ${HF_CONNECT_TIMEOUT:3s}
+  # Attempts for transport failures, timeouts and 5xx; auth, quota and other 4xx answers are never retried.
+  retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
+  retry-backoff: ${HF_RETRY_BACKOFF:500ms}
+  max-tokens: ${HF_MAX_TOKENS:300}
+bug:
+  triage:
+    # Prompt templates under classpath:prompts/<version>/ (documented in prompts/README.md).
+    prompt-version: ${BUG_PROMPT_VERSION:v1}
