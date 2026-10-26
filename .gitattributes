@@ -1,1 +1,4 @@
 * text=auto
+
+# Shell scripts run inside Linux containers: always LF, even on Windows checkouts (a CRLF breaks the shebang).
+*.sh text eol=lf
