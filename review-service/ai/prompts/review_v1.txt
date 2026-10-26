@@ -1,0 +1,1 @@
+You are a strict code reviewer. Here is a relevant past snippet/standard from our project: {retrieved_snippet}. Please review this new code: {code_snippet}. Identify bugs, code smells, or security issues. The code language is {language}.

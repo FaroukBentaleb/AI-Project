@@ -3,9 +3,9 @@
 ## Project overview
 
 DevAssist Hub is a full-stack university project with five independent modules.
-Each module is planned as a CRUD feature plus one LLM-powered feature using the
-Hugging Face Inference API. The current repository is the shared scaffold for
-parallel team development.
+Each module is designed as a CRUD feature plus one LLM-powered feature. The
+commit, SQL, and code-review services are implemented; the snippet and bug
+services remain scaffolds.
 
 ## Architecture
 
@@ -33,7 +33,8 @@ flowchart TD
     S --> HF
     B --> HF
     Q --> HF
-    R --> HF
+    R --> AI[review-ai :8000]
+    AI --> G[Groq API]
 ```
 
 | Service | Port | Responsibility |
@@ -46,16 +47,16 @@ flowchart TD
 | `bug-service` | 8083 | Bug reports |
 | `sql-service` | 8084 | SQL queries |
 | `review-service` | 8085 | Code reviews |
+| `review-ai` | internal | RAG-assisted code review with Groq |
 | `postgres` | 5432 | Five service-owned relational databases |
 | `qdrant` | 6333/6334 | Vector storage (REST/gRPC) |
 
 **Tech stack:** Spring Boot 3.3.5, Java 21, Maven, Angular, PostgreSQL,
-Qdrant, Eureka, Spring Cloud Gateway, and the Hugging Face Inference API.
+Qdrant, Eureka, Spring Cloud Gateway, Hugging Face Inference API, and Groq.
 
 PostgreSQL contains `commit_db`, `snippet_db`, `bug_db`, `sql_db`, and
 `review_db`. Qdrant stores the planned `commit_embeddings` collection for
-commit-service. The current repository contains configuration and placeholders;
-module business logic is to be implemented by the team.
+commit-service. The snippet and bug modules still contain placeholders.
 
 ## Module ownership
 
@@ -95,7 +96,7 @@ DDL, or superuser rights), and set a `statement_timeout` for that user.
 copy .env.example .env
 ```
 
-Add the Hugging Face token to `.env`, then run:
+Add the Hugging Face token and `GROQ_API_KEY` to `.env`, then run:
 
 ```bash
 docker compose up --build
