@@ -1,0 +1,176 @@
+<main class="page">
+  <header class="hero">
+    <h1>Docstring generator</h1>
+    <p>
+      Paste a function, save it to your library and let the model write its docstring. Edit the result, copy the
+      documented code, and find it again later.
+    </p>
+  </header>
+
+  @if (error()) {
+    <div class="alert" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="error.set('')" aria-label="Dismiss this message">✕</button>
+    </div>
+  }
+
+  <div class="layout">
+    <aside class="panel editor">
+      <h2>
+        <span class="step">1</span> {{ current() ? 'Snippet #' + current()!.id : 'New snippet' }}
+        @if (current()) {
+          <button type="button" class="link" (click)="newSnippet()" [disabled]="busy()">+ New</button>
+        }
+      </h2>
+
+      <label class="field">
+        <span>Title</span>
+        <input type="text" [value]="title()" (input)="title.set($any($event.target).value)" maxlength="120"
+               placeholder="e.g. average of a list" autocomplete="off" [disabled]="busy()" />
+      </label>
+
+      <div class="field">
+        <span>Language</span>
+        <div class="chips" role="group" aria-label="Language">
+          @for (l of languages; track l.id) {
+            <button type="button" class="chip" [class.active]="language() === l.id" (click)="setLanguage(l.id)"
+                    [disabled]="busy()">{{ l.label }}</button>
+          }
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="row">
+          Function
+          <button type="button" class="link" (click)="useSample()" [disabled]="busy()">Use an example</button>
+        </span>
+        <textarea class="code" rows="14" spellcheck="false" [value]="code()"
+                  (input)="code.set($any($event.target).value)" [disabled]="busy()"
+                  placeholder="Paste one function here…" aria-label="Function code"></textarea>
+      </label>
+      <p class="counter" [class.warn]="tooLong()">{{ code().length }} / 20000 characters</p>
+
+      @if (busy()) {
+        <div class="progress" role="progressbar"><div class="bar indeterminate"></div></div>
+        <p class="status">{{ phase() === 'generating' ? 'The model is writing the docstring…' : 'Saving…' }}</p>
+      }
+
+      <button type="button" class="primary" (click)="generate()" [disabled]="!canSubmit()">
+        {{ busy() ? 'Working…' : current() ? 'Save and regenerate docstring' : 'Generate docstring' }}
+      </button>
+      <button type="button" class="secondary" (click)="save()" [disabled]="!canSubmit()">
+        {{ current() ? 'Save changes' : 'Save without docstring' }}
+      </button>
+      @if (!busy() && !canSubmit()) {
+        <p class="tip">{{ !title().trim() ? 'Give the snippet a title, then paste its code.' : tooLong() ? 'The code is too long: keep it under 20000 characters.' : 'Paste the function to continue.' }}</p>
+      } @else if (!busy() && dirty()) {
+        <p class="tip">You changed the form: save to apply the changes to snippet #{{ current()!.id }}.</p>
+      }
+    </aside>
+
+    <section class="results">
+      @if (current(); as c) {
+        <article class="panel result" #result aria-live="polite">
+          <div class="result-head">
+            <div>
+              <h2><span class="step">2</span> {{ c.title }}</h2>
+              <span class="muted" [attr.title]="c.updated_at">{{ label(c.language) }} · updated {{ ago(c.updated_at) }}</span>
+            </div>
+            <div class="badges">
+              @if (!c.docstring) { <span class="badge warn">no docstring yet</span> }
+              @if (c.docstring_edited) { <span class="badge">edited</span> }
+              @if (c.truncated) { <span class="badge warn" title="The code was too long for the model and was shortened before it was sent">code shortened</span> }
+            </div>
+          </div>
+
+          <div class="doc-box">
+            @if (!editing()) {
+              @if (c.docstring) {
+                <pre class="doc">{{ c.docstring }}</pre>
+              } @else {
+                <p class="muted">Click “Save and regenerate docstring” on the left, or write one yourself.</p>
+              }
+              <div class="actions">
+                <button type="button" (click)="startEdit()">{{ c.docstring ? 'Edit docstring' : 'Write docstring' }}</button>
+                @if (c.docstring) {
+                  <button type="button" (click)="copy('docstring', c.docstring!)">
+                    {{ copied() === 'docstring' ? 'Copied ✓' : 'Copy docstring' }}
+                  </button>
+                }
+              </div>
+            } @else {
+              <textarea rows="7" [value]="draft()" (input)="draft.set($any($event.target).value)" maxlength="4000"
+                        aria-label="Docstring" (keydown.control.enter)="saveEdit()"></textarea>
+              <div class="actions">
+                <button type="button" class="primary small" (click)="saveEdit()">Save</button>
+                <button type="button" (click)="cancelEdit()">Cancel</button>
+                <span class="counter">{{ draft().length }} / 4000</span>
+              </div>
+            }
+          </div>
+
+          <div class="code-head">
+            <h3>Documented code</h3>
+            <button type="button" class="ghost" (click)="copy('documented', documented())">
+              {{ copied() === 'documented' ? 'Copied ✓' : 'Copy code' }}
+            </button>
+          </div>
+          <pre class="codeblock"><code>{{ documented() }}</code></pre>
+        </article>
+      } @else {
+        <div class="panel placeholder">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 18 8 32l14 14M42 18l14 14-14 14M36 14 28 50" /></svg>
+          <h2>Your documented function will appear here</h2>
+          <p>Paste a function on the left, or open a snippet from your library below.</p>
+        </div>
+      }
+
+      <section class="panel library">
+        <div class="library-head">
+          <h2>Library</h2>
+          <span class="count">{{ library().length }}</span>
+        </div>
+        <input type="text" class="search" [value]="query()" (input)="setQuery($any($event.target).value)"
+               placeholder="Search titles and code…" aria-label="Search snippets" autocomplete="off" />
+        <div class="chips" role="group" aria-label="Filter by language">
+          <button type="button" class="chip" [class.active]="!filterLanguage()" (click)="setFilterLanguage('')">All</button>
+          @for (l of languages; track l.id) {
+            <button type="button" class="chip" [class.active]="filterLanguage() === l.id"
+                    (click)="setFilterLanguage(l.id)">{{ l.label }}</button>
+          }
+        </div>
+        @if (library().length === 0) {
+          <p class="empty">{{ query() || filterLanguage() ? 'No snippet matches.' : 'No snippets yet. Everything you save shows up here.' }}</p>
+        }
+        <ul class="list">
+          @for (item of library(); track item.id) {
+            <li [class.selected]="item.id === current()?.id">
+              <button type="button" class="item" (click)="open(item.id)">
+                <span class="lang l-{{ item.language }}">{{ label(item.language) }}</span>
+                <span class="item-body">
+                  <span class="line1">{{ item.title }}</span>
+                  <span class="meta">
+                    @if (item.docstring) { {{ summary(item.docstring) }} } @else { <em>no docstring</em> }
+                    · {{ ago(item.created_at) }}
+                  </span>
+                </span>
+              </button>
+              @if (confirmDeleteId() === item.id) {
+                <span class="confirm">
+                  Delete?
+                  <button type="button" class="danger" (click)="remove(item)">Yes</button>
+                  <button type="button" (click)="confirmDeleteId.set(null)">No</button>
+                </span>
+              } @else {
+                <button type="button" class="icon-btn" (click)="confirmDeleteId.set(item.id)"
+                        aria-label="Delete this snippet">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    </section>
+  </div>
+</main>
