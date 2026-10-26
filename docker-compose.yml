@@ -92,6 +92,17 @@ services:
       # The first start downloads the base model (~1 GB) when the real model is enabled.
       start_period: 30s
 
+  review-ai:
+    build: ./review-service/ai
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
   commit-service:
     build: ./commit-service
     ports:
@@ -117,6 +128,28 @@ services:
       retries: 10
       start_period: 30s
 
+  # Docstring model behind POST /generate: the fine-tuned adapter in snippet-service/ai/model/adapter on top of
+  # Qwen2.5-Coder-0.5B (see snippet-service/ai/README.md). It refuses to start without the adapter.
+  snippet-model:
+    build: ./snippet-service/ai
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./snippet-service/ai/model:/app/model:ro
+      - snippet-model-cache:/root/.cache/huggingface
+    environment:
+      # Empty = float32 on CPU (~2.2 GB of RAM, fastest on CPUs without native bfloat16). Tunable from .env.
+      SNIPPET_DTYPE: ${SNIPPET_DTYPE:-}
+      # Longest docstring in tokens: lower it (e.g. 100) to answer faster on a slow CPU.
+      SNIPPET_MAX_NEW_TOKENS: ${SNIPPET_MAX_NEW_TOKENS:-160}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 90
+      # The first start downloads the base model (~1 GB, 5-20 min on a slow link) and loads it before answering.
+      start_period: 300s
+
   snippet-service:
     build: ./snippet-service
     ports:
@@ -126,13 +159,18 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${SNIPPET_DB}
       SPRING_DATASOURCE_USERNAME: ${SNIPPET_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SNIPPET_DB_PASSWORD}
-      HF_API_TOKEN: ${HF_API_TOKEN}
-      HF_MODEL: ${HF_MODEL}
+      SNIPPET_MODEL_URL: http://snippet-model:8000
+      # CPU generation can take a while; one attempt only, since the model serves one request at a time and a retry
+      # would just queue a second generation behind the first.
+      SNIPPET_MODEL_READ_TIMEOUT: ${SNIPPET_MODEL_READ_TIMEOUT:-120s}
+      SNIPPET_MODEL_RETRY_MAX_ATTEMPTS: ${SNIPPET_MODEL_RETRY_MAX_ATTEMPTS:-1}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      snippet-model:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8082/actuator/health"]
@@ -215,13 +253,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${REVIEW_DB}
       SPRING_DATASOURCE_USERNAME: ${REVIEW_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${REVIEW_DB_PASSWORD}
-      HF_API_TOKEN: ${HF_API_TOKEN}
-      HF_MODEL: ${HF_MODEL}
+      REVIEW_AI_URL: http://review-ai:8000
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      review-ai:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8085/actuator/health"]
@@ -241,3 +280,4 @@ volumes:
   postgres-data:
   qdrant-storage:
   commit-model-cache:
+  snippet-model-cache:

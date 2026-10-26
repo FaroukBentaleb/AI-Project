@@ -4,6 +4,9 @@ spring.datasource.url: ${SPRING_DATASOURCE_URL}
 spring.datasource.username: ${SPRING_DATASOURCE_USERNAME}
 spring.datasource.password: ${SPRING_DATASOURCE_PASSWORD}
 spring.jpa.hibernate.ddl-auto: validate
+spring.jackson.property-naming-strategy: SNAKE_CASE
+spring.flyway.enabled: true
+spring.flyway.locations: classpath:db/migration
 springdoc.api-docs.path: /v3/api-docs
 springdoc.swagger-ui.path: /swagger-ui.html
 management.endpoints.web.exposure.include: health,info
@@ -13,7 +16,6 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
-hf.api-token: ${HF_API_TOKEN:}
-hf.model: ${HF_MODEL:}
-hf.timeout: ${HF_TIMEOUT:10s}
-hf.retry-max-attempts: ${HF_RETRY_MAX_ATTEMPTS:3}
+review.ai.url: ${REVIEW_AI_URL:http://localhost:8000}
+review.ai.connect-timeout: ${REVIEW_AI_CONNECT_TIMEOUT:5s}
+review.ai.read-timeout: ${REVIEW_AI_READ_TIMEOUT:120s}
