@@ -1,0 +1,143 @@
+<form class="panel form" (submit)="$event.preventDefault(); save()" novalidate>
+  <div class="form-head">
+    <h2>{{ editing() ? 'Edit bug #' + bug!.id : 'Report a bug' }}</h2>
+    <button type="button" class="ghost" (click)="cancelled.emit()">Cancel</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert" role="alert"><span>{{ error() }}</span></div>
+  }
+
+  <label class="field" [class.invalid]="fieldError() === 'description'">
+    <span>What happened? <em>required</em></span>
+    <textarea rows="5" maxlength="10000" [value]="description()" (input)="set(description, $event)"
+              placeholder="Describe the problem: what you did, what you saw, how often it happens…"></textarea>
+  </label>
+
+  <button type="button" class="link" (click)="showDetails.set(!showDetails())" [attr.aria-expanded]="showDetails()">
+    {{ showDetails() ? '▾' : '▸' }} Reproduction details, stack trace and environment
+  </button>
+  @if (showDetails()) {
+    <div class="details">
+      <label class="field">
+        <span>Steps to reproduce</span>
+        <textarea rows="3" maxlength="5000" [value]="steps()" (input)="set(steps, $event)"
+                  placeholder="1. Open the cart&#10;2. Click Pay"></textarea>
+      </label>
+      <div class="row">
+        <label class="field">
+          <span>Expected result</span>
+          <textarea rows="2" maxlength="2000" [value]="expected()" (input)="set(expected, $event)"></textarea>
+        </label>
+        <label class="field">
+          <span>Actual result</span>
+          <textarea rows="2" maxlength="2000" [value]="actual()" (input)="set(actual, $event)"></textarea>
+        </label>
+      </div>
+      <label class="field">
+        <span>Stack trace / logs</span>
+        <textarea class="mono" rows="4" maxlength="20000" [value]="stackTrace()" (input)="set(stackTrace, $event)"
+                  placeholder="Paste the error. Emails, tokens, IPs and user names are masked before AI analysis."></textarea>
+      </label>
+      <div class="row">
+        <label class="field">
+          <span>Environment</span>
+          <input type="text" maxlength="200" [value]="environment()" (input)="set(environment, $event)"
+                 placeholder="e.g. Chrome 130, Windows 11" />
+        </label>
+        <label class="field">
+          <span>App version</span>
+          <input type="text" maxlength="50" [value]="appVersion()" (input)="set(appVersion, $event)" placeholder="e.g. 1.4.2" />
+        </label>
+      </div>
+    </div>
+  }
+
+  <!-- AI triage -->
+  <section class="ai" aria-live="polite">
+    <div class="ai-head">
+      <div>
+        <strong>✦ AI triage</strong>
+        <span class="muted">Suggests severity, category and a title from the report.</span>
+      </div>
+      <button type="button" class="ai-btn" (click)="analyse()" [disabled]="!canAnalyse()"
+              [title]="description().trim().length < 10 ? 'Describe the bug first (10+ characters)' : ''">
+        @if (analysing()) { <span class="spinner" aria-hidden="true"></span> Analyzing… } @else { Analyze with AI }
+      </button>
+    </div>
+    @if (triageStatus && !triageStatus.configured) {
+      <p class="ai-note warn">No model key is configured on bug-service, so AI triage is off.</p>
+    }
+    @if (aiError()) {
+      <p class="ai-note warn" role="alert">{{ aiError() }}</p>
+    }
+    @if (suggestion(); as s) {
+      <div class="suggestion">
+        <div class="suggestion-title">“{{ s.suggested_title }}”</div>
+        <div class="pills">
+          <span class="pill sev-{{ s.severity }}">{{ sevLabel(s.severity) }}</span>
+          <span class="pill cat">{{ catLabel(s.category) }}</span>
+        </div>
+        @if (s.rationale) { <p class="rationale">{{ s.rationale }}</p> }
+        <div class="suggestion-foot">
+          <span class="muted">
+            {{ s.model }} · prompt {{ s.prompt_version }}
+            @if (s.redactions > 0) { · {{ s.redactions }} private value{{ s.redactions > 1 ? 's' : '' }} masked before sending }
+          </span>
+          <button type="button" class="apply" (click)="applyAll()" [disabled]="suggestionApplied()">
+            {{ suggestionApplied() ? '✓ Applied' : 'Apply suggestion' }}
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <label class="field" [class.invalid]="fieldError() === 'title'">
+    <span>Title <em>required</em></span>
+    <input type="text" maxlength="200" [value]="title()" (input)="set(title, $event)"
+           placeholder="Short summary, or let the AI suggest one" />
+  </label>
+
+  <div class="row three">
+    <label class="field">
+      <span>Severity</span>
+      <select [value]="severity()" (change)="setSeverity($event)">
+        @for (s of severities; track s) { <option [value]="s" [selected]="s === severity()">{{ sevLabel(s) }}</option> }
+      </select>
+    </label>
+    <label class="field">
+      <span>Category</span>
+      <select [value]="category()" (change)="setCategory($event)">
+        @for (c of categories; track c) { <option [value]="c" [selected]="c === category()">{{ catLabel(c) }}</option> }
+      </select>
+    </label>
+    <label class="field">
+      <span>Status</span>
+      <select [value]="status()" (change)="setStatus($event)">
+        @for (s of statuses; track s) { <option [value]="s" [selected]="s === status()">{{ stLabel(s) }}</option> }
+      </select>
+    </label>
+  </div>
+
+  <div class="row">
+    <label class="field">
+      <span>Reporter</span>
+      <input type="text" maxlength="100" [value]="reporter()" (input)="set(reporter, $event)" />
+    </label>
+    <label class="field">
+      <span>Assignee</span>
+      <input type="text" maxlength="100" [value]="assignee()" (input)="set(assignee, $event)" />
+    </label>
+  </div>
+  <label class="field" [class.invalid]="fieldError() === 'tags'">
+    <span>Tags <em>comma-separated, up to 10</em></span>
+    <input type="text" [value]="tags()" (input)="set(tags, $event)" placeholder="checkout, mobile" />
+  </label>
+
+  <div class="form-actions">
+    <button type="button" class="ghost" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="primary" [disabled]="!canSave()">
+      {{ saving() ? 'Saving…' : editing() ? 'Save changes' : 'Create bug' }}
+    </button>
+  </div>
+</form>

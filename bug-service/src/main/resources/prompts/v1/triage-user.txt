@@ -1,0 +1,25 @@
+Triage this bug report.
+
+<report>
+Title given by the reporter: {{title}}
+
+Description:
+{{description}}
+
+Steps to reproduce:
+{{steps}}
+
+Expected result:
+{{expected}}
+
+Actual result:
+{{actual}}
+
+Environment: {{environment}}
+Application version: {{app_version}}
+
+Stack trace (may be shortened):
+{{stack_trace}}
+</report>
+
+Return only the JSON object.

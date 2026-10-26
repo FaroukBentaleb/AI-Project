@@ -1,0 +1,217 @@
+<main class="page">
+  <header class="hero">
+    <div>
+      <h1>Bug tracker</h1>
+      <p>Report bugs and let the AI suggest a severity, a category and a clear title. You review the suggestion before
+        it's applied.</p>
+    </div>
+    <button type="button" class="primary new" (click)="newBug()">+ Report a bug</button>
+  </header>
+
+  @if (error()) {
+    <div class="alert" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="error.set('')" aria-label="Dismiss this message">✕</button>
+    </div>
+  }
+
+  @if (stats(); as s) {
+    <section class="stats" aria-label="Summary">
+      <button type="button" class="stat" [class.active]="status() === 'OPEN'" (click)="setStatusFilter('OPEN')">
+        <span class="stat-value">{{ s.by_status.OPEN }}</span><span class="stat-label">Open</span>
+      </button>
+      <button type="button" class="stat" [class.active]="status() === 'IN_PROGRESS'" (click)="setStatusFilter('IN_PROGRESS')">
+        <span class="stat-value">{{ s.by_status.IN_PROGRESS }}</span><span class="stat-label">In progress</span>
+      </button>
+      <div class="stat urgent" [class.zero]="urgent() === 0">
+        <span class="stat-value">{{ urgent() }}</span><span class="stat-label">Critical / high still open</span>
+      </div>
+      <button type="button" class="stat" [class.active]="status() === 'RESOLVED'" (click)="setStatusFilter('RESOLVED')">
+        <span class="stat-value">{{ s.by_status.RESOLVED + s.by_status.CLOSED }}</span><span class="stat-label">Resolved or closed</span>
+      </button>
+      <div class="stat">
+        <span class="stat-value">{{ s.total }}</span><span class="stat-label">Total</span>
+      </div>
+    </section>
+  }
+
+  <div class="layout">
+    <section class="list-col">
+      <div class="panel filters">
+        <input type="search" placeholder="Search title or description…" [value]="query()" (input)="onSearch($event)"
+               aria-label="Search bugs" />
+        <div class="filter-row">
+          <div class="chips" role="group" aria-label="Status">
+            @for (st of statuses; track st) {
+              <button type="button" class="chip" [class.active]="status() === st" (click)="setStatusFilter(st)">{{ stLabel(st) }}</button>
+            }
+          </div>
+        </div>
+        <div class="filter-row selects">
+          <select (change)="setSeverityFilter($event)" aria-label="Severity">
+            <option value="" [selected]="!severity()">Any severity</option>
+            @for (sv of severities; track sv) { <option [value]="sv" [selected]="severity() === sv">{{ sevLabel(sv) }}</option> }
+          </select>
+          <select (change)="setCategoryFilter($event)" aria-label="Category">
+            <option value="" [selected]="!category()">Any category</option>
+            @for (c of categories; track c) { <option [value]="c" [selected]="category() === c">{{ catLabel(c) }}</option> }
+          </select>
+          <select (change)="setSort($event)" aria-label="Sort">
+            @for (so of sorts; track so) { <option [value]="so" [selected]="sort() === so">{{ sortLabel(so) }}</option> }
+          </select>
+        </div>
+        @if (filtered()) {
+          <button type="button" class="link clear" (click)="clearFilters()">Clear filters</button>
+        }
+      </div>
+
+      @if (page(); as p) {
+        @if (p.items.length === 0) {
+          <div class="panel empty">
+            @if (filtered()) {
+              <p>No bug matches these filters.</p>
+              <button type="button" class="ghost" (click)="clearFilters()">Clear filters</button>
+            } @else {
+              <p><strong>No bugs yet.</strong> Report the first one. The AI can classify it for you.</p>
+              <button type="button" class="primary" (click)="newBug()">+ Report a bug</button>
+            }
+          </div>
+        } @else {
+          <ul class="bug-list" [class.dim]="loading()">
+            @for (b of p.items; track b.id) {
+              <li>
+                <button type="button" class="bug" [class.selected]="selected()?.id === b.id" (click)="open(b)">
+                  <span class="sev-bar sev-{{ b.severity }}" aria-hidden="true"></span>
+                  <span class="bug-main">
+                    <span class="bug-title">{{ b.title }}</span>
+                    <span class="bug-meta">
+                      #{{ b.id }} · {{ catLabel(b.category) }} · {{ ago(b.created_at) }}
+                      @if (b.assignee) { · {{ b.assignee }} }
+                    </span>
+                    @if (b.tags.length) {
+                      <span class="tags">@for (t of b.tags; track t) { <span class="tag">{{ t }}</span> }</span>
+                    }
+                  </span>
+                  <span class="bug-side">
+                    <span class="pill sev-{{ b.severity }}">{{ sevLabel(b.severity) }}</span>
+                    <span class="pill st-{{ b.status }}">{{ stLabel(b.status) }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+          @if (p.total_pages > 1) {
+            <nav class="pager" aria-label="Pages">
+              <button type="button" class="ghost" [disabled]="p.page === 0" (click)="goToPage(p.page - 1)">← Prev</button>
+              <span class="muted">Page {{ p.page + 1 }} of {{ p.total_pages }} · {{ p.total_items }} bugs</span>
+              <button type="button" class="ghost" [disabled]="p.page + 1 >= p.total_pages" (click)="goToPage(p.page + 1)">Next →</button>
+            </nav>
+          }
+        }
+      } @else if (loading()) {
+        <p class="muted">Loading bugs…</p>
+      }
+    </section>
+
+    <section class="pane-col">
+      @switch (mode()) {
+        @case ('create') {
+          <app-bug-form [bug]="null" [triageStatus]="triageStatus()" (saved)="onSaved($event)" (cancelled)="closePane()" />
+        }
+        @case ('edit') {
+          <app-bug-form [bug]="selected()" [triageStatus]="triageStatus()" (saved)="onSaved($event)" (cancelled)="closePane()" />
+        }
+        @case ('view') {
+          @if (selected(); as b) {
+            <article class="panel detail">
+              <div class="detail-head">
+                <div class="pills">
+                  <span class="pill sev-{{ b.severity }}">{{ sevLabel(b.severity) }}</span>
+                  <span class="pill st-{{ b.status }}">{{ stLabel(b.status) }}</span>
+                  <span class="pill cat">{{ catLabel(b.category) }}</span>
+                </div>
+                <button type="button" class="icon" (click)="closePane()" aria-label="Close">✕</button>
+              </div>
+              <h2 class="detail-title">{{ b.title }}</h2>
+              <p class="muted">
+                #{{ b.id }} · reported {{ ago(b.created_at) }}@if (b.reporter) { by {{ b.reporter }} }
+                @if (b.assignee) { · assigned to {{ b.assignee }} }
+                @if (b.resolved_at) { · resolved {{ ago(b.resolved_at) }} }
+              </p>
+              @if (b.tags.length) {
+                <div class="tags">@for (t of b.tags; track t) { <span class="tag">{{ t }}</span> }</div>
+              }
+
+              <div class="actions">
+                <button type="button" class="primary" (click)="advanceStatus(b, nextStatus(b.status))">
+                  {{ b.status === 'CLOSED' ? 'Reopen' : 'Move to ' + stLabel(nextStatus(b.status)) }}
+                </button>
+                <button type="button" class="ghost" (click)="edit()">Edit</button>
+                @if (confirmDelete()) {
+                  <span class="confirm">Delete for good?
+                    <button type="button" class="danger" (click)="remove(b)">Delete</button>
+                    <button type="button" class="ghost" (click)="confirmDelete.set(false)">Keep</button>
+                  </span>
+                } @else {
+                  <button type="button" class="ghost del" (click)="confirmDelete.set(true)">Delete</button>
+                }
+              </div>
+
+              <section class="ai-card" aria-live="polite">
+                <div class="ai-card-head">
+                  <strong>✦ AI triage</strong>
+                  <button type="button" class="ghost small" (click)="retriage(b)" [disabled]="retriaging()">
+                    @if (retriaging()) { Analyzing… } @else { {{ b.ai ? 'Re-run' : 'Analyze this bug' }} }
+                  </button>
+                </div>
+                @if (aiError()) { <p class="warn">{{ aiError() }}</p> }
+                @if (b.ai; as ai) {
+                  <p class="ai-title">“{{ ai.suggested_title }}”</p>
+                  <div class="pills">
+                    <span class="pill sev-{{ ai.severity }}">{{ sevLabel(ai.severity) }}</span>
+                    <span class="pill cat">{{ catLabel(ai.category) }}</span>
+                  </div>
+                  @if (ai.rationale) { <p class="muted rationale">{{ ai.rationale }}</p> }
+                  <div class="ai-foot">
+                    <span class="muted">{{ ai.model }} · prompt {{ ai.prompt_version }} · {{ ago(ai.triaged_at) }}</span>
+                    @if (aiDiffers()) {
+                      <button type="button" class="apply" (click)="applyAi(b)">Apply suggestion</button>
+                    } @else {
+                      <span class="ok">✓ Matches the bug</span>
+                    }
+                  </div>
+                } @else if (!aiError()) {
+                  <p class="muted">Not analyzed yet.</p>
+                }
+              </section>
+
+              <h3>Description</h3>
+              <p class="text">{{ b.description }}</p>
+              @if (b.steps_to_reproduce) { <h3>Steps to reproduce</h3><p class="text">{{ b.steps_to_reproduce }}</p> }
+              @if (b.expected_result || b.actual_result) {
+                <div class="row">
+                  <div><h3>Expected</h3><p class="text">{{ b.expected_result || '—' }}</p></div>
+                  <div><h3>Actual</h3><p class="text">{{ b.actual_result || '—' }}</p></div>
+                </div>
+              }
+              @if (b.stack_trace) { <h3>Stack trace</h3><pre class="trace">{{ b.stack_trace }}</pre> }
+              @if (b.environment || b.app_version) {
+                <p class="muted env">
+                  @if (b.environment) { Environment: {{ b.environment }} }
+                  @if (b.app_version) { · Version {{ b.app_version }} }
+                </p>
+              }
+            </article>
+          }
+        }
+        @default {
+          <div class="panel placeholder">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="36" rx="13" ry="17" /><path d="M32 19v34M19 30h-9M19 42h-8M45 30h9M45 42h8M24 21l-5-7M40 21l5-7" /></svg>
+            <h2>Select a bug</h2>
+            <p>Pick a bug from the list to see its details and AI triage, or report a new one.</p>
+          </div>
+        }
+      }
+    </section>
+  </div>
+</main>
