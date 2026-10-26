@@ -20,8 +20,17 @@ public class Review {
     @Column(name = "code_snippet", nullable = false, columnDefinition = "text")
     private String codeSnippet;
 
+    @Column(nullable = false, length = 50)
+    private String language;
+
     @Column(name = "ai_response", nullable = false, columnDefinition = "text")
     private String aiResponse;
+
+    @Column(name = "relevant_standard", nullable = false, columnDefinition = "text")
+    private String relevantStandard;
+
+    @Column(name = "relevance_score", nullable = false)
+    private double relevanceScore;
 
     @Column(nullable = false, length = 32)
     private String status;
@@ -33,10 +42,23 @@ public class Review {
     protected Review() {
     }
 
-    public Review(String codeSnippet, String aiResponse, String status) {
+    public Review(String codeSnippet, String language, String aiResponse, String relevantStandard,
+                  double relevanceScore, String status) {
         this.codeSnippet = codeSnippet;
+        this.language = language;
         this.aiResponse = aiResponse;
+        this.relevantStandard = relevantStandard;
+        this.relevanceScore = relevanceScore;
         this.status = status;
+    }
+
+    public void update(String codeSnippet, String language, String aiResponse, String relevantStandard,
+                       double relevanceScore) {
+        this.codeSnippet = codeSnippet;
+        this.language = language;
+        this.aiResponse = aiResponse;
+        this.relevantStandard = relevantStandard;
+        this.relevanceScore = relevanceScore;
     }
 
     public Long getId() {
@@ -47,8 +69,20 @@ public class Review {
         return codeSnippet;
     }
 
+    public String getLanguage() {
+        return language;
+    }
+
     public String getAiResponse() {
         return aiResponse;
+    }
+
+    public String getRelevantStandard() {
+        return relevantStandard;
+    }
+
+    public double getRelevanceScore() {
+        return relevanceScore;
     }
 
     public String getStatus() {

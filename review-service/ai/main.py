@@ -46,6 +46,7 @@ def review_code(request: ReviewRequest):
     incoming_embedding = embedding_model.encode([request.code_snippet])
     similarities = cosine_similarity(incoming_embedding, standard_embeddings)[0]
     retrieved_snippet = standards[int(similarities.argmax())]
+    relevance_score = float(max(0.0, min(1.0, similarities.max())))
     prompt = review_prompt_template.format(
         retrieved_snippet=retrieved_snippet,
         code_snippet=request.code_snippet,
@@ -70,4 +71,8 @@ def review_code(request: ReviewRequest):
     if not response or not response.strip():
         raise HTTPException(status_code=502, detail="Groq returned an empty code review")
 
-    return {"response": response.strip(), "relevant_snippet": retrieved_snippet}
+    return {
+        "response": response.strip(),
+        "relevant_snippet": retrieved_snippet,
+        "relevance_score": relevance_score,
+    }

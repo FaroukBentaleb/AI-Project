@@ -66,7 +66,7 @@ commit-service. The snippet and bug modules still contain placeholders.
 | Code snippets | `snippet-service` | 8082 | TBD | Snippet → docstring and tags |
 | Bug reports | `bug-service` | 8083 | TBD | Report → severity, category, and suggested title (JSON) |
 | SQL queries | `sql-service` | 8084 | TBD | Natural language → read-only validated SQL |
-| Code reviews | `review-service` | 8085 | TBD | Code → smells and vulnerabilities with explanations |
+| Code reviews | `review-service` | 8085 | TBD | RAG-assisted code review with saved review history |
 
 ## SQL validation safety
 
