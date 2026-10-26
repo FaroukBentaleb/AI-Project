@@ -92,6 +92,17 @@ services:
       # The first start downloads the base model (~1 GB) when the real model is enabled.
       start_period: 30s
 
+  review-ai:
+    build: ./review-service/ai
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
   commit-service:
     build: ./commit-service
     ports:
@@ -239,13 +250,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${REVIEW_DB}
       SPRING_DATASOURCE_USERNAME: ${REVIEW_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${REVIEW_DB_PASSWORD}
-      HF_API_TOKEN: ${HF_API_TOKEN}
-      HF_MODEL: ${HF_MODEL}
+      REVIEW_AI_URL: http://review-ai:8000
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      review-ai:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8085/actuator/health"]
